@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 /**
  *
  */
-public interface S3RecordsWriter {
+public interface GCSRecordsWriter {
 
 	/**
 	 * Opportunity to write any header bytes desired.
@@ -29,7 +29,7 @@ public interface S3RecordsWriter {
 		return new byte[0];
 	}
 
-	static S3RecordsWriter forRecordWriter(Function<ProducerRecord<byte[], byte[]>, byte[]> writeRecord) {
+	static GCSRecordsWriter forRecordWriter(Function<ProducerRecord<byte[], byte[]>, byte[]> writeRecord) {
 		return records -> records.map(writeRecord);
 	}
 }

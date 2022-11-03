@@ -6,17 +6,17 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-//import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+//import com.amazonaws.services.gcs.model.GetObjectRequest;
+//import com.amazonaws.services.gcs.model.ListObjectsRequest;
+//import com.amazonaws.services.gcs.model.ObjectListing;
+//import com.amazonaws.services.gcs.model.GCSObject;
+//import com.amazonaws.services.gcs.model.GCSObjectSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.spredfast.kafka.connect.s3.LazyString;
-import com.spredfast.kafka.connect.s3.S3RecordsReader;
-import com.spredfast.kafka.connect.s3.json.ChunkDescriptor;
-import com.spredfast.kafka.connect.s3.json.ChunksIndex;
+import com.spredfast.kafka.connect.gcs.LazyString;
+import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
+import com.spredfast.kafka.connect.gcs.json.ChunkDescriptor;
+import com.spredfast.kafka.connect.gcs.json.ChunksIndex;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.connect.data.Schema;
@@ -45,13 +45,13 @@ import java.util.zip.GZIPInputStream;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Helpers for reading records out of S3. Not thread safe.
- * Records should be in order since S3 lists files in lexicographic order.
+ * Helpers for reading records out of GCS. Not thread safe.
+ * Records should be in order since GCS lists files in lexicographic order.
  * It is strongly recommended that you use a unique key prefix per topic as
  * there is no option to restrict this reader by topic.
  * <p>
  * NOTE: hasNext() on the returned iterators may throw AmazonClientException if there
- * was a problem communicating with S3 or reading an object. Your code should
+ * was a problem communicating with GCS or reading an object. Your code should
  * catch AmazonClientException and implement back-off and retry as desired.
  * <p>
  * Any other exception should be considered a permanent failure.
@@ -69,7 +69,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 
 	private final Storage storage;
 
-	private final Supplier<S3RecordsReader> makeReader;
+	private final Supplier<GCSRecordsReader> makeReader;
 
 	private final Map<GCSPartition, GCSOffset> offsets;
 
@@ -77,7 +77,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 
 	private final GCSSourceConfig config;
 
-	public GCSFilesReader(GCSSourceConfig config, Storage storage, Map<GCSPartition, GCSOffset> offsets, Supplier<S3RecordsReader> recordReader) {
+	public GCSFilesReader(GCSSourceConfig config, Storage storage, Map<GCSPartition, GCSOffset> offsets, Supplier<GCSRecordsReader> recordReader) {
 		this.config = config;
 		this.offsets = Optional.ofNullable(offsets).orElseGet(HashMap::new);
 		this.storage = storage;
@@ -136,7 +136,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			String currentKey;
 
 			ObjectListing objectListing;
-			Iterator<S3ObjectSummary> nextFile = Collections.emptyIterator();
+			Iterator<GCSObjectSummary> nextFile = Collections.emptyIterator();
 			Iterator<ConsumerRecord<byte[], byte[]>> iterator = Collections.emptyIterator();
 
 			private void nextObject() {
@@ -163,16 +163,16 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 //							config.pageSize * 2
 //						));
 						log.debug("gcs ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, config.startMarker,
-							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(S3ObjectSummary::getName).collect(toList())));
+							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(GCSObjectSummary::getName).collect(toList())));
 					} else {
 						String marker = objectListing.getNextMarker();
 						objectListing = storage.listNextBatchOfObjects(objectListing);
 						log.debug("aws ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, marker,
-							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(S3ObjectSummary::getName).collect(toList())));
+							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(GCSObjectSummary::getName).collect(toList())));
 					}
 
-					List<S3ObjectSummary> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
-					for (S3ObjectSummary chunk : objectListing.getObjectSummaries()) {
+					List<GCSObjectSummary> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
+					for (GCSObjectSummary chunk : objectListing.getObjectSummaries()) {
 						if (DATA_SUFFIX.matcher(chunk.getName()).find() && parseKeyUnchecked(chunk.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
 							GCSOffset offset = offset(chunk);
@@ -187,7 +187,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							chunks.add(chunk);
 						}
 					}
-					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(S3ObjectSummary::getName).collect(toList())));
+					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(GCSObjectSummary::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {
@@ -195,7 +195,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					return;
 				}
 				try {
-					S3ObjectSummary file = nextFile.next();
+					GCSObjectSummary file = nextFile.next();
 
 					currentKey = file.getName();
 					GCSOffset offset = offset(file);
@@ -203,7 +203,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						resumeFromOffset(offset);
 					} else {
 						log.debug("Now reading from {}", currentKey);
-						S3RecordsReader reader = makeReader.get();
+						GCSRecordsReader reader = makeReader.get();
 						InputStream content = getContent(storage.getObject(config.bucket, currentKey));
 						iterator = parseKey(currentKey, (topic, partition, startOffset) -> {
 							reader.init(topic, partition, content, startOffset);
@@ -215,11 +215,11 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				}
 			}
 
-			private InputStream getContent(S3Object object) throws IOException {
+			private InputStream getContent(GCSObject object) throws IOException {
 				return config.inputFilter.filter(object.getObjectContent());
 			}
 
-			private GCSOffset offset(S3ObjectSummary chunk) {
+			private GCSOffset offset(GCSObjectSummary chunk) {
 				return offsets.get(GCSPartition.from(config.bucket, config.keyPrefix, topic(chunk.getName()), partition(chunk.getName())));
 			}
 
@@ -229,7 +229,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			 */
 			private void resumeFromOffset(GCSOffset offset) throws IOException {
 				log.debug("resumeFromOffset {}", offset);
-				S3RecordsReader reader = makeReader.get();
+				GCSRecordsReader reader = makeReader.get();
 
 				ChunksIndex index = getChunksIndex(offset.getGCSkey());
 				ChunkDescriptor chunkDescriptor = index.chunkContaining(offset.getOffset() + 1)
@@ -256,7 +256,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						reader.init(topic, partition, getContent(object), startOffset);
 						return null;
 					});
-//					try (S3Object object = storage.getObject(new GetObjectRequest(config.bucket, offset.getGCSkey()))) {
+//					try (GCSObject object = storage.getObject(new GetObjectRequest(config.bucket, offset.getGCSkey()))) {
 //						parseKey(object.getName(), (topic, partition, startOffset) -> {
 //							reader.init(topic, partition, getContent(object), startOffset);
 //							return null;
@@ -365,7 +365,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 	}
 
 	/**
-	 * Filtering applied to the S3InputStream. Will almost always start
+	 * Filtering applied to the GCSInputStream. Will almost always start
 	 * with GUNZIP, but could also include things like decryption.
 	 */
 	public interface InputFilter {

@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -9,7 +9,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
  * Thing that can read out records from a byte stream. A new instance will be created for each
  * partition file and will be used by a single thread. init will be called before readAll if requested.
  */
-public interface S3RecordsReader {
+public interface GCSRecordsReader {
 
 	/**
 	 * Must return true if you implement init().

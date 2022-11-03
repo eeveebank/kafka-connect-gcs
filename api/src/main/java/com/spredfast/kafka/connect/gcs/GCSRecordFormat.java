@@ -1,39 +1,39 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
 /**
  * Pairing of reader and writer for records in S3. A new reader/writer will be constructed for each
  * file to be read/written.
  */
-public interface S3RecordFormat {
+public interface GCSRecordFormat {
 
 	/**
 	 * Returns a function that takes a topic and raw bytes, and returns the bytes to write to S3.
 	 * Bytes for each record will be written consecutively without any additional delimiter, so the
 	 * reader must be able to read a concatenation of such byte sequences.
 	 */
-	S3RecordsWriter newWriter();
+	GCSRecordsWriter newWriter();
 
 	/**
 	 * @return a reader that can reverse {@link #newWriter()}
 	 */
-	S3RecordsReader newReader();
+	GCSRecordsReader newReader();
 
 	/**
 	 * Convenience method if you have your own S3 data you want to read out.
 	 */
-	static S3RecordFormat readOnly(S3RecordsReader reader) {
+	static GCSRecordFormat readOnly(GCSRecordsReader reader) {
 		return from(reader, r -> { throw new UnsupportedOperationException("Format is read-only."); });
 	}
 
-	static S3RecordFormat from(S3RecordsReader reader, S3RecordsWriter writer) {
-		return new S3RecordFormat() {
+	static GCSRecordFormat from(GCSRecordsReader reader, GCSRecordsWriter writer) {
+		return new GCSRecordFormat() {
 			@Override
-			public S3RecordsWriter newWriter() {
+			public GCSRecordsWriter newWriter() {
 				return writer;
 			}
 
 			@Override
-			public S3RecordsReader newReader() {
+			public GCSRecordsReader newReader() {
 				return reader;
 			}
 		};

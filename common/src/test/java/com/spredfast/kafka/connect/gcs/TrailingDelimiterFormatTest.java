@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.stream.Stream;
-
-import static com.spredfast.kafka.connect.s3.FormatTests.assertBytesAreEqual;
 
 public class TrailingDelimiterFormatTest {
 
@@ -69,7 +67,7 @@ public class TrailingDelimiterFormatTest {
 		System.arraycopy(keyAndValue, 0, expected, 0, keyAndValue.length);
 		System.arraycopy(headerDelimiter, 0, expected, keyAndValue.length, headerDelimiter.length);
 
-		assertBytesAreEqual(expected, format.newWriter().writeBatch(Stream.of(
+		FormatTests.assertBytesAreEqual(expected, format.newWriter().writeBatch(Stream.of(
 			new ProducerRecord<>("topic", "abc".getBytes(Charsets.UTF_16BE), "def".getBytes(Charsets.UTF_16BE))
 		)).findFirst().get());
 	}
@@ -91,7 +89,7 @@ public class TrailingDelimiterFormatTest {
 		System.arraycopy(headers, 0, expected, keyAndValue.length, headers.length);
 		System.arraycopy(headerDelimiter, 0, expected, keyAndValue.length + headers.length, headerDelimiter.length);
 
-		assertBytesAreEqual(expected, format.newWriter().writeBatch(Stream.of(
+		FormatTests.assertBytesAreEqual(expected, format.newWriter().writeBatch(Stream.of(
 			new ProducerRecord<>(
 				"topic", null, "abc".getBytes(Charsets.UTF_16BE), "def".getBytes(Charsets.UTF_16BE),
 				new RecordHeaders(new RecordHeader[]{new RecordHeader("h1", "foo".getBytes(StandardCharsets.UTF_16BE))})

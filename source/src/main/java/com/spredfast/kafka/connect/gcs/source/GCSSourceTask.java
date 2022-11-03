@@ -2,7 +2,7 @@ package com.spredfast.kafka.connect.gcs.source;
 
 import com.google.cloud.storage.Storage;
 import com.amazonaws.services.s3.model.StorageException;
-import com.spredfast.kafka.connect.s3.*;
+import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -29,7 +29,7 @@ public class GCSSourceTask extends SourceTask {
 	private Iterator<GCSSourceRecord> reader;
 	private int maxPoll;
 	private final Map<String, String> topicMapping = new HashMap<>();
-	private S3RecordFormat format;
+	private GCSRecordFormat format;
 	private Optional<Converter> keyConverter;
 	private Converter valueConverter;
 	private long s3PollInterval = 10_000L;

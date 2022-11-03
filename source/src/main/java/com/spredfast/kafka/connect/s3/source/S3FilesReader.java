@@ -10,7 +10,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.spredfast.kafka.connect.s3.LazyString;
-import com.spredfast.kafka.connect.s3.S3RecordsReader;
+import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
 import com.spredfast.kafka.connect.s3.json.ChunkDescriptor;
 import com.spredfast.kafka.connect.s3.json.ChunksIndex;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -65,7 +65,7 @@ public class S3FilesReader implements Iterable<S3SourceRecord> {
 
 	private final AmazonS3 s3Client;
 
-	private final Supplier<S3RecordsReader> makeReader;
+	private final Supplier<GCSRecordsReader> makeReader;
 
 	private final Map<S3Partition, S3Offset> offsets;
 
@@ -73,7 +73,7 @@ public class S3FilesReader implements Iterable<S3SourceRecord> {
 
 	private final S3SourceConfig config;
 
-	public S3FilesReader(S3SourceConfig config, AmazonS3 s3Client, Map<S3Partition, S3Offset> offsets, Supplier<S3RecordsReader> recordReader) {
+	public S3FilesReader(S3SourceConfig config, AmazonS3 s3Client, Map<S3Partition, S3Offset> offsets, Supplier<GCSRecordsReader> recordReader) {
 		this.config = config;
 		this.offsets = Optional.ofNullable(offsets).orElseGet(HashMap::new);
 		this.s3Client = s3Client;
@@ -193,7 +193,7 @@ public class S3FilesReader implements Iterable<S3SourceRecord> {
 						resumeFromOffset(offset);
 					} else {
 						log.debug("Now reading from {}", currentKey);
-						S3RecordsReader reader = makeReader.get();
+						GCSRecordsReader reader = makeReader.get();
 						InputStream content = getContent(s3Client.getObject(config.bucket, currentKey));
 						iterator = parseKey(currentKey, (topic, partition, startOffset) -> {
 							reader.init(topic, partition, content, startOffset);
@@ -219,7 +219,7 @@ public class S3FilesReader implements Iterable<S3SourceRecord> {
 			 */
 			private void resumeFromOffset(S3Offset offset) throws IOException {
 				log.debug("resumeFromOffset {}", offset);
-				S3RecordsReader reader = makeReader.get();
+				GCSRecordsReader reader = makeReader.get();
 
 				ChunksIndex index = getChunksIndex(offset.getS3key());
 				ChunkDescriptor chunkDescriptor = index.chunkContaining(offset.getOffset() + 1)

@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.spredfast.kafka.connect.s3.FormatTests.assertBytesAreEqual;
+import static com.spredfast.kafka.connect.gcs.FormatTests.assertBytesAreEqual;
 
 public class ByteLengthFormatTest {
 

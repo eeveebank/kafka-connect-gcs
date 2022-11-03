@@ -6,7 +6,7 @@ import com.spredfast.kafka.connect.s3.AlreadyBytesConverter;
 import com.spredfast.kafka.connect.s3.Configure;
 import com.spredfast.kafka.connect.s3.Constants;
 import com.spredfast.kafka.connect.s3.S3;
-import com.spredfast.kafka.connect.s3.S3RecordFormat;
+import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -43,7 +43,7 @@ public class S3SourceTask extends SourceTask {
 	private Iterator<S3SourceRecord> reader;
 	private int maxPoll;
 	private final Map<String, String> topicMapping = new HashMap<>();
-	private S3RecordFormat format;
+	private GCSRecordFormat format;
 	private Optional<Converter> keyConverter;
 	private Converter valueConverter;
 	private long s3PollInterval = 10_000L;

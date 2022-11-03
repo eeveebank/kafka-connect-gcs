@@ -1,7 +1,6 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
-
-import com.amazonaws.services.s3.AmazonS3;
+import com.google.cloud.storage.Storage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -13,7 +12,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 
-public class S3ClientTest {
+public class GCSClientTest {
 	@Rule
 	public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
@@ -22,8 +21,8 @@ public class S3ClientTest {
 		// set the AWS region for test purposes
 		environmentVariables.set("AWS_REGION", "eu-west-2");
 		Map<String, String> config = new HashMap<>();
-		config.put("s3.endpoint", "https://s3-eu-west-2.amazonaws.com");
-		AmazonS3 client = S3.s3client(config);
+		config.put("gcs.endpoint", "https://gcs-eu-west-2.amazonaws.com");
+		Storage client = GCS.gcsclient(config);
 		assertThat(client, not(nullValue()));
 	}
 }

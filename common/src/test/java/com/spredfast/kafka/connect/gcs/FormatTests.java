@@ -1,5 +1,8 @@
-package com.spredfast.kafka.connect.s3;
+package com.spredfast.kafka.connect.gcs;
 
+import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
+import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
+import com.spredfast.kafka.connect.gcs.GCSRecordsWriter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
@@ -61,12 +64,12 @@ public class FormatTests {
 		}
 	}
 
-	public static void roundTrip_singlePartition_fromZero_withNullKeys(S3RecordFormat format, List<Record> values) throws IOException {
+	public static void roundTrip_singlePartition_fromZero_withNullKeys(GCSRecordFormat format, List<Record> values) throws IOException {
 		roundTrip_singlePartition_fromZero_withNullKeys(format, values, 0L);
 	}
 
 	// don't currently have a format that cares about start offset, so overload isn't used
-	public static void roundTrip_singlePartition_fromZero_withNullKeys(S3RecordFormat format, List<Record> values, long startOffset) throws IOException {
+	public static void roundTrip_singlePartition_fromZero_withNullKeys(GCSRecordFormat format, List<Record> values, long startOffset) throws IOException {
 		Stream<ProducerRecord<byte[], byte[]>> records = values.stream().map(r -> r.value).map(v ->
 			new ProducerRecord<>("topic", 0, null, v.getBytes())
 		);
@@ -76,7 +79,7 @@ public class FormatTests {
 		assertEquals(values, results);
 	}
 
-	public static void roundTrip_singlePartition_fromZero_withKeys(S3RecordFormat format, List<Record> records, long startOffset) throws IOException {
+	public static void roundTrip_singlePartition_fromZero_withKeys(GCSRecordFormat format, List<Record> records, long startOffset) throws IOException {
 		Stream<ProducerRecord<byte[], byte[]>> producerRecords = records.stream().map(entry ->
 			new ProducerRecord<>("topic", 0, entry.key.getBytes(), entry.value.getBytes())
 		);
@@ -86,7 +89,7 @@ public class FormatTests {
 		assertEquals(records, results);
 	}
 
-	public static void roundTrip_singlePartition_fromZero_withKeysAndHeaders(S3RecordFormat format, List<Record> records, long startOffset) throws IOException {
+	public static void roundTrip_singlePartition_fromZero_withKeysAndHeaders(GCSRecordFormat format, List<Record> records, long startOffset) throws IOException {
 		Stream<ProducerRecord<byte[], byte[]>> producerRecords = records.stream().map(entry ->
 			new ProducerRecord<>("topic", 0, entry.key.getBytes(), entry.value.getBytes(), entry.headers)
 		);
@@ -102,8 +105,8 @@ public class FormatTests {
 		}
 	}
 
-	private static List<ConsumerRecord<byte[], byte[]>> roundTrip(S3RecordFormat format, long startOffset, Stream<ProducerRecord<byte[], byte[]>> records) throws IOException {
-		S3RecordsWriter writer = format.newWriter();
+	private static List<ConsumerRecord<byte[], byte[]>> roundTrip(GCSRecordFormat format, long startOffset, Stream<ProducerRecord<byte[], byte[]>> records) throws IOException {
+		GCSRecordsWriter writer = format.newWriter();
 
 		ByteArrayOutputStream boas = new ByteArrayOutputStream();
 		boas.write(writer.init("topic", 0, startOffset));
@@ -112,7 +115,7 @@ public class FormatTests {
 		boas.write(writer.finish("topic", 0));
 
 		ByteArrayInputStream in = new ByteArrayInputStream(boas.toByteArray());
-		S3RecordsReader reader = format.newReader();
+		GCSRecordsReader reader = format.newReader();
 		if (reader.isInitRequired()) {
 			reader.init("topic", 0, in, startOffset);
 		}
