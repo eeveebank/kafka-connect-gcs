@@ -230,7 +230,9 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			}
 
 			private InputStream getContent(Blob blob) throws IOException {
-				return config.inputFilter.filter(blob.getContent());
+				return config.inputFilter.filter(
+					new ByteArrayInputStream(blob.getContent())
+				);
 			}
 
 			private GCSOffset offset(Blob chunk) {
@@ -318,7 +320,6 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			}
 
 			boolean hasMoreObjects() {
-				Page<Blob> blobs;
 				return blobs == null /*|| objectListing.isTruncated()*/ || nextFile.hasNext();
 			}
 
@@ -403,7 +404,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 	 * with GUNZIP, but could also include things like decryption.
 	 */
 	public interface InputFilter {
-		InputStream filter(byte[] inputStream) throws IOException;
+		InputStream filter(InputStream inputStream) throws IOException;
 
 		InputFilter GUNZIP = GZIPInputStream::new;
 	}
