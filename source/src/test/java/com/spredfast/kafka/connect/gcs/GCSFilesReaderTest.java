@@ -7,16 +7,16 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.NoCredentials;
-//import com.amazonaws.services.s3.AmazonS3;
-//import com.amazonaws.services.s3.transfer.TransferManager;
-//import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-//import com.amazonaws.services.s3.transfer.Upload;
+//import com.amazonaws.services.gcs.AmazonS3;
+//import com.amazonaws.services.gcs.transfer.TransferManager;
+//import com.amazonaws.services.gcs.transfer.TransferManagerBuilder;
+//import com.amazonaws.services.gcs.transfer.Upload;
 import com.spredfast.kafka.connect.gcs.BlockGZIPFileWriter;
-//import com.spredfast.kafka.connect.s3.source.GCSFilesReader;
-//import com.spredfast.kafka.connect.s3.source.S3Offset;
-//import com.spredfast.kafka.connect.s3.source.S3Partition;
-//import com.spredfast.kafka.connect.s3.source.GCSSourceConfig;
-//import com.spredfast.kafka.connect.s3.source.S3SourceRecord;
+//import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
+//import com.spredfast.kafka.connect.gcs.source.S3Offset;
+//import com.spredfast.kafka.connect.gcs.source.S3Partition;
+//import com.spredfast.kafka.connect.gcs.source.GCSSourceConfig;
+//import com.spredfast.kafka.connect.gcs.source.S3SourceRecord;
 import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceConfig;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceRecord;
@@ -58,28 +58,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Covers S3 and reading raw byte records. Closer to an integration test.
  */
 class GCSFilesReaderTest {
-	private final FakeGCS s3 = new FakeGCS();
+	private final FakeGCS gcs = new FakeGCS();
 	private String bucketName = "bucket";
 	private static final Random RANDOM = new Random();
 
 	private static final BiFunction<String, String, Headers> headersFunction = (k, v) -> new RecordHeaders(new RecordHeader[]{new RecordHeader(k, v.getBytes(StandardCharsets.UTF_8))});
+	static Storage storageClient;
 
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws Exception {
 		bucketName = String.format("test-bucket-%d", RANDOM.nextLong());
-		s3.start();
+		storageClient = gcs.startAndReturnClient(bucketName);
 	}
 
 	@AfterEach
 	void tearDown() {
-		s3.close();
+		gcs.close();
 	}
 
 	@Test
 	void testReadingBytesFromGCS() throws IOException {
-		final Storage client = GCSClient();
-		final Path dir = Files.createTempDirectory("s3FilesReaderTest");
+		final Storage client = storageClient;
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 		givenSomeDataWithKeys(client, dir);
 
 		List<String> results = whenTheRecordsAreRead(client, true, 3);
@@ -91,8 +92,8 @@ class GCSFilesReaderTest {
 //	void testReadingBytesFromS3_multiPartition() throws IOException {
 //		// scenario: multiple partition files at the end of a listing, page size >  # of files
 //		// do we read all of them?
-//		final Storage client = GCSClient();
-//		final Path dir = Files.createTempDirectory("s3FilesReaderTest");
+//		final Storage client = storageClient;
+//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenASingleDayWithManyPartitions(client, dir);
 //
 //		List<String> results = whenTheRecordsAreRead(client, true, 10);
@@ -102,8 +103,8 @@ class GCSFilesReaderTest {
 //
 //	@Test
 //	void testReadingBytesFromS3_withOffsets() throws IOException {
-//		final Storage client = GCSClient();
-//		final Path dir = Files.createTempDirectory("s3FilesReaderTest");
+//		final Storage client = storageClient;
+//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenSomeDataWithKeys(client, dir);
 //
 //		List<String> results = whenTheRecordsAreRead(givenAReaderWithOffsets(client,
@@ -121,8 +122,8 @@ class GCSFilesReaderTest {
 //
 //	@Test
 //	void testReadingBytesFromS3_withOffsetsAtEndOfFile() throws IOException {
-//		final Storage client = GCSClient();
-//		final Path dir = Files.createTempDirectory("s3FilesReaderTest");
+//		final Storage client = storageClient;
+//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenSomeDataWithKeys(client, dir);
 //
 //		// this file will be skipped
@@ -170,8 +171,8 @@ class GCSFilesReaderTest {
 //
 //	@Test
 //	void testReadingBytesFromS3_withoutKeys() throws IOException {
-//		final Storage client = GCSClient();
-//		final Path dir = Files.createTempDirectory("s3FilesReaderTest");
+//		final Storage client = storageClient;
+//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenSomeDataWithoutKeys(client, dir);
 //
 //		List<String> results = whenTheRecordsAreRead(client, false);
@@ -339,32 +340,5 @@ class GCSFilesReaderTest {
 			new ProducerRecord<>("", 0, key, value, headers)
 		)).collect(toList()), 1);
 	}
-
-	private Storage GCSClient() {
-//		Map<String, String> config = ImmutableMap.of(
-//			"s3.new.record.poll.interval", "200",
-//			"s3.endpoint", s3.getEndpoint(),
-//			"s3.path_style", "true"  // necessary for FakeS3
-//		);
-//		Storage client = StorageOptions.newBuilder()
-//			.setHost("http://${gcs.host}:${gcs.firstMappedPort}")
-//			.build()
-//			.service;
-//		//Storage client = S3.s3client(config);
-//		client.createBucket(bucketName);
-//		return client;
-
-		String fakeGcsExternalUrl = "http://0.0.0.0:8080";
-
-		Storage client = StorageOptions.newBuilder()
-			.setHost(fakeGcsExternalUrl)
-			.setProjectId("test-project")
-			.setCredentials(NoCredentials.getInstance())
-			.build()
-			.getService();
-
-		return client;
-	}
-
 
 }

@@ -1,56 +1,52 @@
 package com.spredfast.kafka.connect.gcs;
 
 import com.google.cloud.NoCredentials;
+import com.google.cloud.WriteChannel;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 
-// https://github.com/fsouza/fake-gcs-server/blob/main/examples/java/src/test/java/com/fsouza/fakegcsserver/java/examples/FakeGcsServerTest.java
-// https://stackoverflow.com/questions/70972595/getting-java-net-connectexception-connection-refused-connection-refused-while
-// https://github.com/fsouza/fake-gcs-server/blob/main/examples/java/README.md
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Testcontainers
-public class FakeGCS {
+class SampleTest {
+
+	static Storage storageClient;
 
 	@Container
-	public GenericContainer<?> gcs = new GenericContainer<>(DockerImageName.parse("fsouza/fake-gcs-server"))
+	static final GenericContainer<?> fakeGcs = new GenericContainer<>("fsouza/fake-gcs-server")
 		.withExposedPorts(4443)
 		.withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint(
 			"/bin/fake-gcs-server",
 			"-scheme", "http"
 		));
 
-	public Storage startAndReturnClient(String bucketName) throws Exception {
-		gcs.start();
-		String fakeGcsExternalUrl = getEndpoint();
+	@BeforeAll
+	static void setUpFakeGcs() throws Exception {
+		String fakeGcsExternalUrl = "http://" + fakeGcs.getContainerIpAddress() + ":" + fakeGcs.getFirstMappedPort();
+
 		updateExternalUrlWithContainerUrl(fakeGcsExternalUrl);
 
-		Storage storageClient = StorageOptions.newBuilder()
+		storageClient = StorageOptions.newBuilder()
 			.setHost(fakeGcsExternalUrl)
 			.setProjectId("test-project")
 			.setCredentials(NoCredentials.getInstance())
 			.build()
 			.getService();
-
-		storageClient.create(BucketInfo.newBuilder(bucketName).build());
-
-		return storageClient;
-	}
-
-	public void close() {
-		//gcs.close();
-	}
-
-	public String getEndpoint() {
-		return String.format("http://%s:%s", gcs.getHost(), gcs.getFirstMappedPort());
 	}
 
 	private static void updateExternalUrlWithContainerUrl(String fakeGcsExternalUrl) throws Exception {
@@ -71,5 +67,20 @@ public class FakeGCS {
 			throw new RuntimeException(
 				"error updating fake-gcs-server with external url, response status code " + response.statusCode() + " != 200");
 		}
+	}
+
+	@Test
+	void shouldUploadFileByWriterChannel() throws IOException {
+
+		storageClient.create(BucketInfo.newBuilder("sample-bucket2").build());
+
+		WriteChannel channel = storageClient.writer(BlobInfo.newBuilder("sample-bucket2", "some_file2.txt").build());
+		channel.write(ByteBuffer.wrap("line1\n".getBytes()));
+		channel.write(ByteBuffer.wrap("line2\n".getBytes()));
+		channel.close();
+
+		Blob someFile2 = storageClient.get("sample-bucket2", "some_file2.txt");
+		String fileContent = new String(someFile2.getContent());
+		assertEquals("line1\nline2\n", fileContent);
 	}
 }

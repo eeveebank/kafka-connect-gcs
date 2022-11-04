@@ -158,7 +158,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						blobs = storage.list(
 							config.bucket,
 							Storage.BlobListOption.prefix(config.keyPrefix),
-							Storage.BlobListOption.pageToken(config.startMarker)
+							Storage.BlobListOption.startOffset(config.startMarker)
 						);
 //						objectListing = storage.listObjects(new ListObjectsRequest(
 //							config.bucket,
