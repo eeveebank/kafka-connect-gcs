@@ -29,5 +29,5 @@ public interface GCSRecordsReader {
 	 */
 	default void init(String topic, int partition, InputStream inputStream, long startOffset) {}
 
-	Iterator<ConsumerRecord<byte[], byte[]>> readAll(final String topic, final int partition, final ByteBuffer byteBuffer/* InputStream inputStream */ , final long startOffset);
+	Iterator<ConsumerRecord<byte[], byte[]>> readAll(final String topic, final int partition, InputStream inputStream , final long startOffset);
 }

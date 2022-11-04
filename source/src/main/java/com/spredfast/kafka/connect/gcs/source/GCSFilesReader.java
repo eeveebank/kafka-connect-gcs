@@ -291,9 +291,13 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				from.seek(rangeBegin);
 				from.limit(rangeEnd);
 				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
-				//reader.read(buffer);
+				from.read(buffer);
+				buffer.flip();
+				byte[] actual = new byte[buffer.limit()];
+				buffer.get(actual);
+
 				iterator = parseKey(currentKey, (topic, partition, startOffset) ->
-					reader.readAll(topic, partition, buffer, chunkDescriptor.first_record_offset));
+					reader.readAll(topic, partition, new ByteArrayInputStream(actual), chunkDescriptor.first_record_offset));
 
 
 				log.debug("Resume {}: Now reading from {}, reading {}-{}", offset, currentKey, chunkDescriptor.byte_offset, index.totalSize());
