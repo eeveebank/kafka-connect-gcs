@@ -2,6 +2,7 @@ package com.spredfast.kafka.connect.gcs.source;
 
 import com.amazonaws.AmazonClientException;
 import com.google.api.gax.paging.Page;
+import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Bucket;
@@ -9,10 +10,11 @@ import com.google.cloud.storage.Blob;
 //import com.amazonaws.services.gcs.model.GetObjectRequest;
 //import com.amazonaws.services.gcs.model.ListObjectsRequest;
 //import com.amazonaws.services.gcs.model.ObjectListing;
-//import com.amazonaws.services.gcs.model.GCSObject;
-//import com.amazonaws.services.gcs.model.GCSObjectSummary;
+//import com.amazonaws.services.gcs.model.Blob;
+//import com.amazonaws.services.gcs.model.Blob;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.io.ByteStreams;
 import com.spredfast.kafka.connect.gcs.LazyString;
 import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
 import com.spredfast.kafka.connect.gcs.json.ChunkDescriptor;
@@ -26,9 +28,13 @@ import org.apache.kafka.connect.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -135,8 +141,9 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 		return new Iterator<GCSSourceRecord>() {
 			String currentKey;
 
-			ObjectListing objectListing;
-			Iterator<GCSObjectSummary> nextFile = Collections.emptyIterator();
+			//ObjectListing objectListing;
+			Page<Blob> blobs;
+			Iterator<Blob> nextFile = Collections.emptyIterator();
 			Iterator<ConsumerRecord<byte[], byte[]>> iterator = Collections.emptyIterator();
 
 			private void nextObject() {
@@ -146,9 +153,9 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					// i.e., all of partition 0 will be read before partition 1. Seems like that will make perf wonky if
 					// there is an active, multi-partition consumer on the other end.
 					// to mitigate that, have as many tasks as partitions.
-					if (objectListing == null) {
+					if (blobs == null) {
 						// https://github.com/googleapis/java-storage/blob/583bf73f5d58aa5d79fbaa12b24407c558235eed/samples/snippets/src/main/java/com/example/storage/object/ListObjectsWithPrefix.java
-						Page<Blob> blobs = storage.list(
+						blobs = storage.list(
 							config.bucket,
 							Storage.BlobListOption.prefix(config.keyPrefix),
 							Storage.BlobListOption.pageToken(config.startMarker)
@@ -162,32 +169,39 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 //							// whatever the requested page size is, we'll need twice that
 //							config.pageSize * 2
 //						));
-						log.debug("gcs ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, config.startMarker,
-							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(GCSObjectSummary::getName).collect(toList())));
-					} else {
-						String marker = objectListing.getNextMarker();
-						objectListing = storage.listNextBatchOfObjects(objectListing);
-						log.debug("aws ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, marker,
-							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(GCSObjectSummary::getName).collect(toList())));
-					}
-
-					List<GCSObjectSummary> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
-					for (GCSObjectSummary chunk : objectListing.getObjectSummaries()) {
-						if (DATA_SUFFIX.matcher(chunk.getName()).find() && parseKeyUnchecked(chunk.getName(),
+//						log.debug("gcs ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, config.startMarker,
+//							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(Blob::getName).collect(toList())));
+					}// else {
+//						Page page = blobs.getNextPage();
+//						//String marker = objectListing.getNextMarker();
+//						blobs = storage.list(
+//							config.bucket,
+//							Storage.BlobListOption.prefix(config.keyPrefix),
+//							Storage.BlobListOption.pageToken(config.startMarker)
+//						);
+//						objectListing = storage.listNextBatchOfObjects(objectListing);
+//						log.debug("aws ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, marker,
+//							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(Blob::getName).collect(toList())));
+//					}
+					//List<Blob> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
+					//for (Blob chunk : objectListing.getObjectSummaries()) {
+					List<Blob> chunks = new ArrayList<>();
+					for (Blob blob: blobs.iterateAll()) {
+						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
-							GCSOffset offset = offset(chunk);
+							GCSOffset offset = offset(blob);
 							if (offset != null) {
 								// if our offset for this partition is beyond this chunk, ignore it
 								// this relies on filename lexicographic order being correct
-								if (offset.getGCSkey().compareTo(chunk.getName()) > 0) {
-									log.debug("Skipping {} because < current offset of {}", chunk.getName(), offset);
+								if (offset.getGCSkey().compareTo(blob.getName()) > 0) {
+									log.debug("Skipping {} because < current offset of {}", blob.getName(), offset);
 									continue;
 								}
 							}
-							chunks.add(chunk);
+							chunks.add(blob);
 						}
 					}
-					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(GCSObjectSummary::getName).collect(toList())));
+					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {
@@ -195,7 +209,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					return;
 				}
 				try {
-					GCSObjectSummary file = nextFile.next();
+					Blob file = nextFile.next();
 
 					currentKey = file.getName();
 					GCSOffset offset = offset(file);
@@ -204,7 +218,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					} else {
 						log.debug("Now reading from {}", currentKey);
 						GCSRecordsReader reader = makeReader.get();
-						InputStream content = getContent(storage.getObject(config.bucket, currentKey));
+						InputStream content = getContent(storage.get(config.bucket, currentKey));
 						iterator = parseKey(currentKey, (topic, partition, startOffset) -> {
 							reader.init(topic, partition, content, startOffset);
 							return reader.readAll(topic, partition, content, startOffset);
@@ -215,11 +229,11 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				}
 			}
 
-			private InputStream getContent(GCSObject object) throws IOException {
-				return config.inputFilter.filter(object.getObjectContent());
+			private InputStream getContent(Blob blob) throws IOException {
+				return config.inputFilter.filter(blob.getContent());
 			}
 
-			private GCSOffset offset(GCSObjectSummary chunk) {
+			private GCSOffset offset(Blob chunk) {
 				return offsets.get(GCSPartition.from(config.bucket, config.keyPrefix, topic(chunk.getName()), partition(chunk.getName())));
 			}
 
@@ -256,7 +270,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						reader.init(topic, partition, getContent(object), startOffset);
 						return null;
 					});
-//					try (GCSObject object = storage.getObject(new GetObjectRequest(config.bucket, offset.getGCSkey()))) {
+//					try (Blob object = storage.getObject(new GetObjectRequest(config.bucket, offset.getGCSkey()))) {
 //						parseKey(object.getName(), (topic, partition, startOffset) -> {
 //							reader.init(topic, partition, getContent(object), startOffset);
 //							return null;
@@ -264,16 +278,25 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 //					}
 				}
 
-				GetObjectRequest request = new GetObjectRequest(config.bucket, offset.getGCSkey());
-				request.setRange(chunkDescriptor.byte_offset, index.totalSize());
+				// https://cloud.google.com/storage/docs/samples/storage-download-byte-range
+				// https://github.com/googleapis/google-cloud-java/issues/6953
+				// https://github.com/googleapis/java-storage/blob/7c0a8e5398c830290feba5bbab20523c269eb5eb/google-cloud-storage/src/test/java/com/google/cloud/storage/it/ITBlobReadChannelTest.java#L369
 
-				Blob object = storage.get(request);
+				currentKey = offset.getGCSkey();
+				BlobId blobId = BlobId.of(config.bucket, currentKey);
+				ReadChannel from = storage.reader(blobId);
+				long rangeBegin = chunkDescriptor.byte_offset;
+				long rangeEnd = index.totalSize();
+				int rangeSize = (int)(rangeEnd - rangeBegin + 1);
+				from.seek(rangeBegin);
+				from.limit(rangeEnd);
+				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
+				//reader.read(buffer);
+				iterator = parseKey(currentKey, (topic, partition, startOffset) ->
+					reader.readAll(topic, partition, buffer, chunkDescriptor.first_record_offset));
 
-				currentKey = object.getName();
+
 				log.debug("Resume {}: Now reading from {}, reading {}-{}", offset, currentKey, chunkDescriptor.byte_offset, index.totalSize());
-
-				iterator = parseKey(object.getName(), (topic, partition, startOffset) ->
-					reader.readAll(topic, partition, getContent(object), chunkDescriptor.first_record_offset));
 
 				// skip records before the given offset
 				long recordSkipCount = offset.getOffset() - chunkDescriptor.first_record_offset + 1;
@@ -291,7 +314,8 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			}
 
 			boolean hasMoreObjects() {
-				return objectListing == null || objectListing.isTruncated() || nextFile.hasNext();
+				Page<Blob> blobs;
+				return blobs == null /*|| objectListing.isTruncated()*/ || nextFile.hasNext();
 			}
 
 			@Override
@@ -360,8 +384,14 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 	}
 
 	private ChunksIndex getChunksIndex(String key) throws IOException {
-		return indexParser.readValue(new InputStreamReader(storage.getObject(config.bucket, DATA_SUFFIX.matcher(key)
-			.replaceAll(".index.json")).getObjectContent()));
+		return indexParser.readValue(
+			new InputStreamReader(
+				new ByteArrayInputStream( // https://www.baeldung.com/convert-byte-array-to-input-stream
+					storage.get(config.bucket, DATA_SUFFIX.matcher(key)
+					.replaceAll(".index.json")).getContent()
+				)
+			)
+		);
 	}
 
 	/**
@@ -369,7 +399,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 	 * with GUNZIP, but could also include things like decryption.
 	 */
 	public interface InputFilter {
-		InputStream filter(InputStream inputStream) throws IOException;
+		InputStream filter(byte[] inputStream) throws IOException;
 
 		InputFilter GUNZIP = GZIPInputStream::new;
 	}

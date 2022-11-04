@@ -1,6 +1,6 @@
 package com.spredfast.kafka.connect.gcs.source;
 
-import com.spredfast.kafka.connect.s3.Constants;
+import com.spredfast.kafka.connect.gcs.Constants;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;

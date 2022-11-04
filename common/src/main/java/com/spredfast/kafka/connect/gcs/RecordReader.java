@@ -1,6 +1,6 @@
 package com.spredfast.kafka.connect.gcs;
 
-import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
+//import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.connect.errors.DataException;
 

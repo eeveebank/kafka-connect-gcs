@@ -1,6 +1,7 @@
 package com.spredfast.kafka.connect.gcs;
 
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -28,5 +29,5 @@ public interface GCSRecordsReader {
 	 */
 	default void init(String topic, int partition, InputStream inputStream, long startOffset) {}
 
-	Iterator<ConsumerRecord<byte[], byte[]>> readAll(final String topic, final int partition, final InputStream inputStream, final long startOffset);
+	Iterator<ConsumerRecord<byte[], byte[]>> readAll(final String topic, final int partition, final ByteBuffer byteBuffer/* InputStream inputStream */ , final long startOffset);
 }

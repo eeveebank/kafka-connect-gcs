@@ -1,7 +1,12 @@
 package com.spredfast.kafka.connect.gcs.source;
 
 import com.google.cloud.storage.Storage;
-import com.amazonaws.services.s3.model.StorageException;
+//import com.amazonaws.services.gcs.model.StorageException;
+import com.google.cloud.storage.StorageException;
+import com.spredfast.kafka.connect.gcs.AlreadyBytesConverter;
+import com.spredfast.kafka.connect.gcs.Configure;
+import com.spredfast.kafka.connect.gcs.Constants;
+import com.spredfast.kafka.connect.gcs.GCS;
 import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -32,7 +37,7 @@ public class GCSSourceTask extends SourceTask {
 	private GCSRecordFormat format;
 	private Optional<Converter> keyConverter;
 	private Converter valueConverter;
-	private long s3PollInterval = 10_000L;
+	private long gcsPollInterval = 10_000L;
 	private long errorBackoff = 1000L;
 	private Map<GCSPartition, GCSOffset> offsets;
 
@@ -61,8 +66,8 @@ public class GCSSourceTask extends SourceTask {
 	}
 
 	private void tryReadFromStoredOffsets() {
-		String bucket = configGet("s3.bucket").orElseThrow(() -> new ConnectException("No bucket configured!"));
-		String prefix = configGet("s3.prefix").orElse("");
+		String bucket = configGet("gcs.bucket").orElseThrow(() -> new ConnectException("No bucket configured!"));
+		String prefix = configGet("gcs.prefix").orElse("");
 
 		Set<Integer> partitionNumbers = Arrays.stream(configGet("partitions").orElseThrow(() -> new IllegalStateException("no assigned parititions!?")).split(","))
 			.map(Integer::parseInt)
@@ -92,20 +97,20 @@ public class GCSSourceTask extends SourceTask {
 		maxPoll = configGet("max.poll.records")
 			.map(Integer::parseInt)
 			.orElse(1000);
-		s3PollInterval = configGet("s3.new.record.poll.interval")
+		gcsPollInterval = configGet("gcs.new.record.poll.interval")
 			.map(Long::parseLong)
 			.orElse(10_000L);
-		errorBackoff = configGet("s3.error.backoff")
+		errorBackoff = configGet("gcs.error.backoff")
 			.map(Long::parseLong)
 			.orElse(1000L);
 
-		Storage client = S3.s3client(taskConfig);
+		Storage client = GCS.gcsclient(taskConfig);
 
 
 		GCSSourceConfig config = new GCSSourceConfig(
 			bucket, prefix,
-			configGet("s3.page.size").map(Integer::parseInt).orElse(100),
-			configGet("s3.start.marker").orElse(null),
+			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
+			configGet("gcs.start.marker").orElse(null),
 			GCSFilesReader.DEFAULT_PATTERN,
 			GCSFilesReader.InputFilter.GUNZIP,
 			GCSFilesReader.PartitionFilter.from((topic, partition) ->
@@ -113,7 +118,7 @@ public class GCSSourceTask extends SourceTask {
 					&& partitionNumbers.contains(partition))
 		);
 
-		log.debug("{} reading from S3 with offsets {}", name(), offsets);
+		log.debug("{} reading from GCS with offsets {}", name(), offsets);
 
 		reader = new GCSFilesReader(config, client, offsets, format::newReader).readAll();
 	}
@@ -152,9 +157,9 @@ public class GCSSourceTask extends SourceTask {
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
 		while (!reader.hasNext() && !stopped.get()) {
-			log.debug("Blocking until new S3 files are available.");
+			log.debug("Blocking until new GCS files are available.");
 			// sleep and block here until new files are available
-			Thread.sleep(s3PollInterval);
+			Thread.sleep(gcsPollInterval);
 			readFromStoredOffsets();
 		}
 
