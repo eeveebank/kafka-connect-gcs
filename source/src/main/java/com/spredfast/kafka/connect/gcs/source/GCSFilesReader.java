@@ -27,17 +27,13 @@ import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-<<<<<<< HEAD:source/src/main/java/com/spredfast/kafka/connect/gcs/source/GCSFilesReader.java
-
 import java.io.ByteArrayInputStream;
-=======
->>>>>>> master:source/src/main/java/com/spredfast/kafka/connect/s3/source/S3FilesReader.java
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
+//import java.nio.channels.FileChannel;
+//import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
