@@ -7,17 +7,19 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.NoCredentials;
-//import com.amazonaws.services.gcs.AmazonS3;
+//import com.amazonaws.services.gcs.AmazonGCS;
 //import com.amazonaws.services.gcs.transfer.TransferManager;
 //import com.amazonaws.services.gcs.transfer.TransferManagerBuilder;
 //import com.amazonaws.services.gcs.transfer.Upload;
 import com.spredfast.kafka.connect.gcs.BlockGZIPFileWriter;
 //import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
-//import com.spredfast.kafka.connect.gcs.source.S3Offset;
-//import com.spredfast.kafka.connect.gcs.source.S3Partition;
+//import com.spredfast.kafka.connect.gcs.source.GCSOffset;
+//import com.spredfast.kafka.connect.gcs.source.GCSPartition;
 //import com.spredfast.kafka.connect.gcs.source.GCSSourceConfig;
-//import com.spredfast.kafka.connect.gcs.source.S3SourceRecord;
+//import com.spredfast.kafka.connect.gcs.source.GCSSourceRecord;
 import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
+import com.spredfast.kafka.connect.gcs.source.GCSOffset;
+import com.spredfast.kafka.connect.gcs.source.GCSPartition;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceConfig;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -55,7 +57,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Covers S3 and reading raw byte records. Closer to an integration test.
+ * Covers GCS and reading raw byte records. Closer to an integration test.
  */
 class GCSFilesReaderTest {
 	private final FakeGCS gcs = new FakeGCS();
@@ -88,40 +90,47 @@ class GCSFilesReaderTest {
 		thenTheyAreInOrder(results);
 	}
 
+	@Test
+	void testReadingBytesFromGCS_multiPartition() throws IOException {
+		// scenario: multiple partition files at the end of a listing, page size >  # of files
+		// do we read all of them?
+		final Storage client = storageClient;
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenASingleDayWithManyPartitions(client, dir);
+
+		List<String> results = whenTheRecordsAreRead(client, true, 10);
+
+		thenTheyAreInOrder(results);
+	}
+
+	@Test
+	void testReadingBytesFromGCS_withOffsets() throws IOException {
+		final Storage client = storageClient;
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenSomeDataWithKeys(client, dir);
+
+		GCSFilesReader x = givenAReaderWithOffsets(
+			client,
+			"prefix/2015-12-31/topic-00003-000000000001.gz",
+			5L,
+			"00003"
+		);
+		List<String> results = whenTheRecordsAreRead(
+			x
+		);
+
+		assertEquals(Arrays.asList(
+			"willbe=skipped5[skipped header key5:skipped header value5]",
+			"willbe=skipped6[skipped header key6:skipped header value6]",
+			"willbe=skipped7[skipped header key7:skipped header value7]",
+			"willbe=skipped8[skipped header key8:skipped header value8]",
+			"willbe=skipped9[skipped header key9:skipped header value9]"
+		), results);
+	}
+
+//
 //	@Test
-//	void testReadingBytesFromS3_multiPartition() throws IOException {
-//		// scenario: multiple partition files at the end of a listing, page size >  # of files
-//		// do we read all of them?
-//		final Storage client = storageClient;
-//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
-//		givenASingleDayWithManyPartitions(client, dir);
-//
-//		List<String> results = whenTheRecordsAreRead(client, true, 10);
-//
-//		thenTheyAreInOrder(results);
-//	}
-//
-//	@Test
-//	void testReadingBytesFromS3_withOffsets() throws IOException {
-//		final Storage client = storageClient;
-//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
-//		givenSomeDataWithKeys(client, dir);
-//
-//		List<String> results = whenTheRecordsAreRead(givenAReaderWithOffsets(client,
-//			"prefix/2015-12-31/topic-00003-000000000001.gz", 5L, "00003"));
-//
-//		assertEquals(Arrays.asList(
-//			"willbe=skipped5[skipped header key5:skipped header value5]",
-//			"willbe=skipped6[skipped header key6:skipped header value6]",
-//			"willbe=skipped7[skipped header key7:skipped header value7]",
-//			"willbe=skipped8[skipped header key8:skipped header value8]",
-//			"willbe=skipped9[skipped header key9:skipped header value9]"
-//		), results);
-//	}
-//
-//
-//	@Test
-//	void testReadingBytesFromS3_withOffsetsAtEndOfFile() throws IOException {
+//	void testReadingBytesFromGCS_withOffsetsAtEndOfFile() throws IOException {
 //		final Storage client = storageClient;
 //		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenSomeDataWithKeys(client, dir);
@@ -136,16 +145,31 @@ class GCSFilesReaderTest {
 //				.collect(toList()),
 //			results);
 //	}
-//
-//	GCSFilesReader givenAReaderWithOffsets(Storage client, String marker, long nextOffset, final String partition) {
-//		Map<S3Partition, S3Offset> offsets = new HashMap<>();
-//		int partInt = Integer.valueOf(partition, 10);
-//		offsets.put(S3Partition.from(bucketName, "prefix", "topic", partInt),
-//			S3Offset.from(marker, nextOffset - 1 /* an S3 offset is the last record processed, so go back 1 to consume next */));
-//		return new GCSFilesReader(new GCSSourceConfig(bucketName, "prefix", 1, null, GCSFilesReader.DEFAULT_PATTERN, GCSFilesReader.InputFilter.GUNZIP,
-//			p -> partInt == p), client, offsets, () -> new BytesRecordReader(true));
-//	}
-//
+
+	GCSFilesReader givenAReaderWithOffsets(Storage client, String marker, long nextOffset, final String partition) {
+		Map<GCSPartition, GCSOffset> offsets = new HashMap<>();
+		int partInt = Integer.valueOf(partition, 10);
+		offsets.put(
+			GCSPartition.from(bucketName, "prefix", "topic", partInt),
+			GCSOffset.from(marker, nextOffset - 1 /* an GCS offset is the last record processed, so go back 1 to consume next */)
+		);
+		GCSFilesReader x = new GCSFilesReader(
+			new GCSSourceConfig(
+				bucketName,
+				"prefix",
+				1,
+				null,
+				GCSFilesReader.DEFAULT_PATTERN,
+				GCSFilesReader.InputFilter.GUNZIP,
+				p -> partInt == p
+			),
+			client,
+			offsets,
+			() -> new BytesRecordReader(true)
+		);
+		return x;
+	}
+
 //	static class ReversedStringBytesConverter implements Converter {
 //		@Override
 //		public void configure(Map<String, ?> configs, boolean isKey) {
@@ -170,7 +194,7 @@ class GCSFilesReaderTest {
 //	}
 //
 //	@Test
-//	void testReadingBytesFromS3_withoutKeys() throws IOException {
+//	void testReadingBytesFromGCS_withoutKeys() throws IOException {
 //		final Storage client = storageClient;
 //		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 //		givenSomeDataWithoutKeys(client, dir);
@@ -254,22 +278,22 @@ class GCSFilesReaderTest {
 		return results;
 	}
 //
-//	private void givenASingleDayWithManyPartitions(Storage client, Path dir) throws IOException {
-//		givenASingleDayWithManyPartitions(client, dir, true);
-//	}
-//
-//	private void givenASingleDayWithManyPartitions(Storage client, Path dir, boolean includeKeys) throws IOException {
-//		new File(dir.toFile(), "prefix/2016-01-01").mkdirs();
-//		try (BlockGZIPFileWriter p0 = new BlockGZIPFileWriter("topic-00000", dir.toString() + "/prefix/2016-01-01", 0, 512);
-//			 BlockGZIPFileWriter p1 = new BlockGZIPFileWriter("topic-00001", dir.toString() + "/prefix/2016-01-01", 0, 512);
-//		) {
-//			write(p0, "key0-0".getBytes(), "value0-0".getBytes(), headersFunction.apply("header key 0-0", "header value 0-0"), includeKeys);
-//			write(p1, "key1-0".getBytes(), "value1-0".getBytes(), headersFunction.apply("header key 1-0", "header value 1-0"), includeKeys);
-//			write(p1, "key1-1".getBytes(), "value1-1".getBytes(), headersFunction.apply("header key 1-1", "header value 1-1"), includeKeys);
-//		}
-//		uploadToGCS(client, dir);
-//	}
-//
+	private void givenASingleDayWithManyPartitions(Storage client, Path dir) throws IOException {
+		givenASingleDayWithManyPartitions(client, dir, true);
+	}
+
+	private void givenASingleDayWithManyPartitions(Storage client, Path dir, boolean includeKeys) throws IOException {
+		new File(dir.toFile(), "prefix/2016-01-01").mkdirs();
+		try (BlockGZIPFileWriter p0 = new BlockGZIPFileWriter("topic-00000", dir.toString() + "/prefix/2016-01-01", 0, 512);
+			 BlockGZIPFileWriter p1 = new BlockGZIPFileWriter("topic-00001", dir.toString() + "/prefix/2016-01-01", 0, 512);
+		) {
+			write(p0, "key0-0".getBytes(), "value0-0".getBytes(), headersFunction.apply("header key 0-0", "header value 0-0"), includeKeys);
+			write(p1, "key1-0".getBytes(), "value1-0".getBytes(), headersFunction.apply("header key 1-0", "header value 1-0"), includeKeys);
+			write(p1, "key1-1".getBytes(), "value1-1".getBytes(), headersFunction.apply("header key 1-1", "header value 1-1"), includeKeys);
+		}
+		uploadToGCS(client, dir);
+	}
+
 	private void givenSomeDataWithKeys(Storage client, Path dir) throws IOException {
 		givenSomeData(client, dir, true);
 	}
@@ -304,7 +328,7 @@ class GCSFilesReaderTest {
 	}
 
 	private void uploadToGCS(Storage storage, Path dir) throws IOException {
-//		TransferManager tm = TransferManagerBuilder.standard().withS3Client(client).build();
+//		TransferManager tm = TransferManagerBuilder.standard().withGCSClient(client).build();
 //		Files.walk(dir).filter(Files::isRegularFile).forEach(f -> {
 //			Path relative = dir.relativize(f);
 //			System.out.println("Writing " + relative.toString());

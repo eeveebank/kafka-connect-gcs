@@ -15,13 +15,13 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'io.codearte.nexus-staging'
 
-description = "kafka-connect-s3"
+description = "kafka-connect-gcs"
 
 allprojects  {
     apply plugin: 'idea'
 	apply plugin: 'java-library'
 
-    group = 'com.spredfast.kafka.connect.s3'
+    group = 'com.spredfast.kafka.connect.gcs'
 	version = '1.0'
 
 	apply plugin: 'java'

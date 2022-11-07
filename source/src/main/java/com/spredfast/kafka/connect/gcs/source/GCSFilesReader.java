@@ -155,11 +155,18 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					// to mitigate that, have as many tasks as partitions.
 					if (blobs == null) {
 						// https://github.com/googleapis/java-storage/blob/583bf73f5d58aa5d79fbaa12b24407c558235eed/samples/snippets/src/main/java/com/example/storage/object/ListObjectsWithPrefix.java
-						blobs = storage.list(
-							config.bucket,
-							Storage.BlobListOption.prefix(config.keyPrefix),
-							Storage.BlobListOption.startOffset(config.startMarker)
-						);
+						if (config.startMarker == null) {
+							blobs = storage.list(
+								config.bucket,
+								Storage.BlobListOption.prefix(config.keyPrefix)
+							);
+						} else {
+							blobs = storage.list(
+								config.bucket,
+								Storage.BlobListOption.prefix(config.keyPrefix),
+								Storage.BlobListOption.startOffset(config.startMarker)
+							);
+						}
 //						objectListing = storage.listObjects(new ListObjectsRequest(
 //							config.bucket,
 //							config.keyPrefix,
@@ -299,7 +306,13 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				buffer.get(actual);
 
 				iterator = parseKey(currentKey, (topic, partition, startOffset) ->
-					reader.readAll(topic, partition, new ByteArrayInputStream(actual), chunkDescriptor.first_record_offset));
+					reader.readAll(
+						topic,
+						partition,
+						new ByteArrayInputStream(actual),
+						chunkDescriptor.first_record_offset
+					)
+				);
 
 
 				log.debug("Resume {}: Now reading from {}, reading {}-{}", offset, currentKey, chunkDescriptor.byte_offset, index.totalSize());
