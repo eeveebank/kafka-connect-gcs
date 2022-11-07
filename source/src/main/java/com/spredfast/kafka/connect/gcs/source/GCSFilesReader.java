@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 //import java.nio.channels.FileChannel;
 //import java.nio.file.Paths;
+import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -291,24 +292,35 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				// https://github.com/googleapis/java-storage/blob/7c0a8e5398c830290feba5bbab20523c269eb5eb/google-cloud-storage/src/test/java/com/google/cloud/storage/it/ITBlobReadChannelTest.java#L369
 
 				currentKey = offset.getGCSkey();
-				BlobId blobId = BlobId.of(config.bucket, currentKey);
-				ReadChannel from = storage.reader(blobId);
-				long rangeBegin = chunkDescriptor.byte_offset;
-				long rangeEnd = index.totalSize();
-				int rangeSize = (int)(rangeEnd - rangeBegin + 1);
-				from.seek(rangeBegin);
-				from.limit(rangeEnd);
-				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
-				from.read(buffer);
-				buffer.flip();
-				byte[] actual = new byte[buffer.limit()];
-				buffer.get(actual);
+
+				//BlobId blobId = BlobId.of(config.bucket, currentKey);
+
+				//ReadChannel from = storage.reader(blobId);
+//				Blob blob = storage.get(blobId);
+//				ReadChannel from = blob.reader();
+
+//				long rangeBegin = chunkDescriptor.byte_offset;
+//				long rangeEnd = index.totalSize();
+//				int rangeSize = (int)(rangeEnd - rangeBegin + 1);
+//				from.seek(rangeBegin);
+//				from.limit(rangeEnd);
+//				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
+//				from.read(buffer);
+//				buffer.flip();
+//				byte[] actual = new byte[buffer.limit()];
+//				buffer.get(actual);
+
+				//https://stackoverflow.com/a/71439200/4325661
+				//InputStream inputStream = Channels.newInputStream(from);
+
+				InputStream inputStream = getContent(storage.get(config.bucket, currentKey));
 
 				iterator = parseKey(currentKey, (topic, partition, startOffset) ->
 					reader.readAll(
 						topic,
 						partition,
-						new ByteArrayInputStream(actual),
+						//new ByteArrayInputStream(actual),
+						inputStream,
 						chunkDescriptor.first_record_offset
 					)
 				);
