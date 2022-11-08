@@ -109,14 +109,13 @@ class GCSFilesReaderTest {
 		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
 		givenSomeDataWithKeys(client, dir);
 
-		GCSFilesReader x = givenAReaderWithOffsets(
-			client,
-			"prefix/2015-12-31/topic-00003-000000000001.gz",
-			5L,
-			"00003"
-		);
 		List<String> results = whenTheRecordsAreRead(
-			x
+			givenAReaderWithOffsets(
+				client,
+				"prefix/2015-12-31/topic-00003-000000000001.gz",
+				5L,
+				"00003"
+			)
 		);
 
 		assertEquals(Arrays.asList(
@@ -153,7 +152,7 @@ class GCSFilesReaderTest {
 			GCSPartition.from(bucketName, "prefix", "topic", partInt),
 			GCSOffset.from(marker, nextOffset - 1 /* an GCS offset is the last record processed, so go back 1 to consume next */)
 		);
-		GCSFilesReader x = new GCSFilesReader(
+		return new GCSFilesReader(
 			new GCSSourceConfig(
 				bucketName,
 				"prefix",
@@ -167,7 +166,6 @@ class GCSFilesReaderTest {
 			offsets,
 			() -> new BytesRecordReader(true)
 		);
-		return x;
 	}
 
 //	static class ReversedStringBytesConverter implements Converter {

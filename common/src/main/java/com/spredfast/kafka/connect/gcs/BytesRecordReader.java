@@ -91,8 +91,19 @@ public class BytesRecordReader implements RecordReader {
 
 		Headers headers = readHeaders(context);
 
-		return new ConsumerRecord<>(context.topic, context.partition, context.offset, NO_TIMESTAMP, TimestampType.NO_TIMESTAMP_TYPE,
-			(long) NULL_CHECKSUM, NULL_SIZE, NULL_SIZE, key, value, headers);
+		return new ConsumerRecord<>(
+			context.topic,
+			context.partition,
+			context.offset,
+			NO_TIMESTAMP,
+			TimestampType.NO_TIMESTAMP_TYPE,
+			(long) NULL_CHECKSUM,
+			NULL_SIZE,
+			NULL_SIZE,
+			key,
+			value,
+			headers
+		);
 	}
 
 	private Headers readHeaders(final ReadContext context) throws IOException {
