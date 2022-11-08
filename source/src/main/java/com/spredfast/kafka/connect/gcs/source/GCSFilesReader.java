@@ -309,27 +309,31 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 
 				currentKey = offset.getGCSkey();
 
-				//BlobId blobId = BlobId.of(config.bucket, currentKey);
-
-				//ReadChannel from = storage.reader(blobId);
-//				Blob blob = storage.get(blobId);
-//				ReadChannel from = blob.reader();
-
-//				long rangeBegin = chunkDescriptor.byte_offset;
-//				long rangeEnd = index.totalSize();
-//				int rangeSize = (int)(rangeEnd - rangeBegin + 1);
-//				from.seek(rangeBegin);
-//				from.limit(rangeEnd);
-//				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
-//				from.read(buffer);
-//				buffer.flip();
-//				byte[] actual = new byte[buffer.limit()];
-//				buffer.get(actual);
+				// Blob blob = storage.get(blobId);
+				// ReadChannel from = blob.reader();
+				BlobId blobId = BlobId.of(config.bucket, currentKey);
+				ReadChannel from = storage.reader(blobId);
+				long rangeBegin = chunkDescriptor.byte_offset;
+				long rangeEnd = index.totalSize();
+				int rangeSize = (int)(rangeEnd - rangeBegin + 1);
+				from.seek(rangeBegin);
+				from.limit(rangeEnd);
+				ByteBuffer buffer = ByteBuffer.allocate(rangeSize);
+				from.read(buffer);
+				buffer.flip();
+				byte[] actual = new byte[buffer.limit()];
+				buffer.get(actual);
 
 				//https://stackoverflow.com/a/71439200/4325661
 				//InputStream inputStream = Channels.newInputStream(from);
 
-				InputStream inputStream = getContent(storage.get(config.bucket, currentKey));
+
+				InputStream inputStream = config.inputFilter.filter( // TODO: use getContent
+					new ByteArrayInputStream(actual)
+				);
+
+				//Blob x = storage.get(config.bucket, currentKey);
+				//InputStream inputStream = getContent(x);
 
 				iterator = parseKey(currentKey, (topic, partition, startOffset) ->
 					reader.readAll(
