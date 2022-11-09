@@ -20,15 +20,8 @@ public class GCS {
 	public static Storage gcsclient(Map<String, String> config) {
 		// Use default credentials provider that looks in Env + Java properties + profile + instance role
 
-		//Storage client = StorageOptions.getDefaultInstance().getService();
-
 		StorageOptions.Builder builder = StorageOptions.newBuilder();
-//			.setHost(fakeGcsExternalUrl)
-//			.setProjectId("test-project")
-//			.setCredentials(NoCredentials.getInstance())
-//		if (parseBoolean(config.get("gcs.path_style"))) {
-//			builder.setPathStyleAccessEnabled(true);
-//		}
+
 		setGCSEndpoint(config, builder);
 		Storage storage = builder
 			.build()
@@ -40,9 +33,6 @@ public class GCS {
 	private static void setGCSEndpoint(Map<String, String> config, StorageOptions.Builder builder) {
 		String gcsEndpoint = config.get("gcs.endpoint");
 		if (gcsEndpoint != null && !Objects.equals(gcsEndpoint, "")) {
-//			builder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-//				gcsEndpoint, parseRegion(gcsEndpoint, GCS_SERVICE_NAME)
-//			));
 			builder.setHost(gcsEndpoint);
 		}
 	}

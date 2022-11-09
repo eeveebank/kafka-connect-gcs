@@ -1,21 +1,13 @@
 package com.spredfast.kafka.connect.gcs.source;
 
-//import com.amazonaws.AmazonClientException;
 import org.apache.kafka.connect.errors.ConnectException;
 import com.google.api.gax.paging.Page;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
-//import com.amazonaws.services.gcs.model.GetObjectRequest;
-//import com.amazonaws.services.gcs.model.ListObjectsRequest;
-//import com.amazonaws.services.gcs.model.ObjectListing;
-//import com.amazonaws.services.gcs.model.Blob;
-//import com.amazonaws.services.gcs.model.Blob;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.google.common.io.ByteStreams;
 import com.spredfast.kafka.connect.gcs.LazyString;
 import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
 import com.spredfast.kafka.connect.gcs.json.ChunkDescriptor;
@@ -33,9 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-//import java.nio.channels.FileChannel;
-//import java.nio.file.Paths;
-import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -168,33 +157,8 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 								Storage.BlobListOption.startOffset(config.startMarker)
 							);
 						}
-//						objectListing = storage.listObjects(new ListObjectsRequest(
-//							config.bucket,
-//							config.keyPrefix,
-//							config.startMarker,
-//							null,
-//							// we have to filter out chunk indexes on this end, so
-//							// whatever the requested page size is, we'll need twice that
-//							config.pageSize * 2
-//						));
-//						log.debug("gcs ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, config.startMarker,
-//							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(Blob::getName).collect(toList())));
-					}// else {
-//						Page page = blobs.getNextPage();
-//						//String marker = objectListing.getNextMarker();
-//						blobs = storage.list(
-//							config.bucket,
-//							Storage.BlobListOption.prefix(config.keyPrefix),
-//							Storage.BlobListOption.pageToken(config.startMarker)
-//						);
-//						objectListing = storage.listNextBatchOfObjects(objectListing);
-//						log.debug("aws ls {}/{} after:{} = {}", config.bucket, config.keyPrefix, marker,
-//							LazyString.of(() -> objectListing.getObjectSummaries().stream().map(Blob::getName).collect(toList())));
-//					}
-					//List<Blob> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
-					//for (Blob chunk : objectListing.getObjectSummaries()) {
+					}
 					List<Blob> chunks = new ArrayList<>();
-					// List <Blob> chunksRef = new ArrayList<>();
 					for (Blob blob: blobs.iterateAll()) {
 						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
@@ -209,21 +173,8 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							}
 							chunks.add(blob);
 						}
-						// chunksRef.add(blob);
 					}
 					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
-					// log.debug("Chunks Ref: {}", LazyString.of(() -> chunksRef.stream().map(Blob::getName).collect(toList())));
-
-//					Page<Blob> blobsRef;
-//					blobsRef = storage.list(
-//						config.bucket,
-//						Storage.BlobListOption.prefix(config.keyPrefix)
-//					);
-//					List <Blob> chunksRef2 = new ArrayList<>();
-//					for (Blob blob: blobsRef.iterateAll()) {
-//						chunksRef2.add(blob);
-//					}
-//					log.debug("Chunks Ref 2 No Markers: {}", LazyString.of(() -> chunksRef2.stream().map(Blob::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {
