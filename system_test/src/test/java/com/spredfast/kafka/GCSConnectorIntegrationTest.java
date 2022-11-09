@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.gcs;
+package com.spredfast.kafka;
 
 //import com.amazonaws.services.gcs.Storage;
 //import com.amazonaws.services.gcs.model.GCSObjectSummary;
@@ -9,14 +9,14 @@ import com.google.cloud.storage.Storage;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
+import com.spredfast.kafka.connect.gcs.AlreadyBytesConverter;
+import com.spredfast.kafka.connect.gcs.ByteLengthFormat;
+import com.spredfast.kafka.connect.gcs.GCS;
 import com.spredfast.kafka.connect.gcs.json.ChunksIndex;
 //import com.spredfast.kafka.connect.gcs.sink.GCSSinkConnector;
 //import com.spredfast.kafka.connect.gcs.sink.GCSSinkTask;
-import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceConnector;
 import com.spredfast.kafka.connect.gcs.source.GCSSourceTask;
-import com.spredfast.kafka.test.KafkaIntegrationTests;
 import org.apache.http.Header;
 import org.apache.http.message.BasicHeader;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -28,16 +28,10 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Headers;
-import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.storage.ConverterType;
-import org.apache.kafka.connect.storage.FileOffsetBackingStore;
 import org.apache.kafka.connect.storage.StringConverter;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,7 +40,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,17 +51,15 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.collect.Maps.immutableEntry;
 import static com.google.common.collect.Maps.transformValues;
-import static com.spredfast.kafka.test.KafkaIntegrationTests.givenKafkaConnect;
-import static com.spredfast.kafka.test.KafkaIntegrationTests.givenLocalKafka;
-import static com.spredfast.kafka.test.KafkaIntegrationTests.waitForPassing;
+import static com.spredfast.kafka.KafkaIntegrationTests.givenKafkaConnect;
+import static com.spredfast.kafka.KafkaIntegrationTests.givenLocalKafka;
+import static com.spredfast.kafka.KafkaIntegrationTests.waitForPassing;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
@@ -132,6 +123,10 @@ public class GCSConnectorIntegrationTest {
 		tryClose(() -> gcs.close());
 	}
 
+	@Test
+	void sample() throws Exception {
+		assertEquals(2, 2);
+	}
 //	@Test
 //	void binaryWithKeys() throws Exception {
 //		// this gross, expensive initialization is necessary to ensure we are handling offsets correctly

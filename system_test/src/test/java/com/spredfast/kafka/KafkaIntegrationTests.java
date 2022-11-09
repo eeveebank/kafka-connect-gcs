@@ -1,4 +1,4 @@
-package com.spredfast.kafka.test;
+package com.spredfast.kafka;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Throwables;
@@ -92,8 +92,8 @@ public class KafkaIntegrationTests {
 		HashMap<String, String> props = new HashMap<>(ImmutableMap.<String, String>builder()
 			.put("bootstrap.servers", "localhost:" + kafkaPort)
 			// perform no conversion
-			.put("key.converter", "com.spredfast.kafka.connect.s3.AlreadyBytesConverter")
-			.put("value.converter", "com.spredfast.kafka.connect.s3.AlreadyBytesConverter")
+			.put("key.converter", "com.spredfast.kafka.connect.gcs.AlreadyBytesConverter")
+			.put("value.converter", "com.spredfast.kafka.connect.gcs.AlreadyBytesConverter")
 			.put("internal.key.converter", QuietJsonConverter.class.getName())
 			.put("internal.value.converter", QuietJsonConverter.class.getName())
 			.put("internal.key.converter.schemas.enable", "true")

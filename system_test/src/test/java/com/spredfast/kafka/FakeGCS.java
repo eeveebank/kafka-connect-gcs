@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.gcs;
+package com.spredfast.kafka;
 
 import com.google.cloud.NoCredentials;
 import com.google.cloud.storage.Bucket;

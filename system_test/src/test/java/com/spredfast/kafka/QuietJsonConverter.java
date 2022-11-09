@@ -1,4 +1,4 @@
-package com.spredfast.kafka.test;
+package com.spredfast.kafka;
 
 import java.util.Map;
 
