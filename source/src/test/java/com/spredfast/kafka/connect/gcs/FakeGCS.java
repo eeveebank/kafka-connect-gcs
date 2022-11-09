@@ -1,6 +1,7 @@
 package com.spredfast.kafka.connect.gcs;
 
 import com.google.cloud.NoCredentials;
+import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -19,7 +20,7 @@ import java.net.http.HttpResponse;
 // https://github.com/fsouza/fake-gcs-server/blob/main/examples/java/README.md
 @Testcontainers
 public class FakeGCS {
-
+	Storage storageClient;
 	@Container
 	public GenericContainer<?> gcs = new GenericContainer<>(DockerImageName.parse("fsouza/fake-gcs-server"))
 		.withExposedPorts(4443)
@@ -33,16 +34,20 @@ public class FakeGCS {
 		String fakeGcsExternalUrl = getEndpoint();
 		updateExternalUrlWithContainerUrl(fakeGcsExternalUrl);
 
-		Storage storageClient = StorageOptions.newBuilder()
+		storageClient = StorageOptions.newBuilder()
 			.setHost(fakeGcsExternalUrl)
 			.setProjectId("test-project")
 			.setCredentials(NoCredentials.getInstance())
 			.build()
 			.getService();
 
-		storageClient.create(BucketInfo.newBuilder(bucketName).build());
+		createBucket(bucketName);
 
 		return storageClient;
+	}
+
+	public Bucket createBucket(String bucketName) {
+		return storageClient.create(BucketInfo.newBuilder(bucketName).build());
 	}
 
 	public void close() {

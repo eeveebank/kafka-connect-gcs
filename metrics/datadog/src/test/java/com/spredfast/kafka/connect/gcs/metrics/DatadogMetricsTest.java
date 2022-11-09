@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3.metrics;
+package com.spredfast.kafka.connect.gcs.metrics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -10,8 +10,8 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.spredfast.kafka.connect.s3.Configure;
-import com.spredfast.kafka.connect.s3.Metrics;
+import com.spredfast.kafka.connect.gcs.Configure;
+import com.spredfast.kafka.connect.gcs.Metrics;
 
 public class DatadogMetricsTest {
 

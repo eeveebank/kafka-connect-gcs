@@ -193,7 +193,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					//List<Blob> chunks = new ArrayList<>(objectListing.getObjectSummaries().size() / 2);
 					//for (Blob chunk : objectListing.getObjectSummaries()) {
 					List<Blob> chunks = new ArrayList<>();
-					List <Blob> chunksRef = new ArrayList<>();
+					// List <Blob> chunksRef = new ArrayList<>();
 					for (Blob blob: blobs.iterateAll()) {
 						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
@@ -208,21 +208,21 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							}
 							chunks.add(blob);
 						}
-						chunksRef.add(blob);
+						// chunksRef.add(blob);
 					}
 					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
-					log.debug("Chunks Ref: {}", LazyString.of(() -> chunksRef.stream().map(Blob::getName).collect(toList())));
+					// log.debug("Chunks Ref: {}", LazyString.of(() -> chunksRef.stream().map(Blob::getName).collect(toList())));
 
-					Page<Blob> blobsRef;
-					blobsRef = storage.list(
-						config.bucket,
-						Storage.BlobListOption.prefix(config.keyPrefix)
-					);
-					List <Blob> chunksRef2 = new ArrayList<>();
-					for (Blob blob: blobsRef.iterateAll()) {
-						chunksRef2.add(blob);
-					}
-					log.debug("Chunks Ref 2 No Markers: {}", LazyString.of(() -> chunksRef2.stream().map(Blob::getName).collect(toList())));
+//					Page<Blob> blobsRef;
+//					blobsRef = storage.list(
+//						config.bucket,
+//						Storage.BlobListOption.prefix(config.keyPrefix)
+//					);
+//					List <Blob> chunksRef2 = new ArrayList<>();
+//					for (Blob blob: blobsRef.iterateAll()) {
+//						chunksRef2.add(blob);
+//					}
+//					log.debug("Chunks Ref 2 No Markers: {}", LazyString.of(() -> chunksRef2.stream().map(Blob::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {

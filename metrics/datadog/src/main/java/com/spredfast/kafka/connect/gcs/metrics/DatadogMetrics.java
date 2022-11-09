@@ -1,4 +1,4 @@
-package com.spredfast.kafka.connect.s3.metrics;
+package com.spredfast.kafka.connect.gcs.metrics;
 
 import static java.util.Optional.ofNullable;
 
@@ -18,8 +18,8 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.spredfast.kafka.connect.s3.Configure;
-import com.spredfast.kafka.connect.s3.Metrics;
+import com.spredfast.kafka.connect.gcs.Configure;
+import com.spredfast.kafka.connect.gcs.Metrics;
 
 /**
  * Reports metrics via https://github.com/coursera/metrics-datadog
