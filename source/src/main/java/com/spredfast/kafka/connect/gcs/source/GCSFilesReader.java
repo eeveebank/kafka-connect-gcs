@@ -1,6 +1,7 @@
 package com.spredfast.kafka.connect.gcs.source;
 
-import com.amazonaws.AmazonClientException;
+//import com.amazonaws.AmazonClientException;
+import org.apache.kafka.connect.errors.ConnectException;
 import com.google.api.gax.paging.Page;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.BlobId;
@@ -246,7 +247,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						});
 					}
 				} catch (IOException e) {
-					throw new AmazonClientException(e);
+					throw new ConnectException("Error in kafka-connect-gcs iterator", e);
 				}
 			}
 
