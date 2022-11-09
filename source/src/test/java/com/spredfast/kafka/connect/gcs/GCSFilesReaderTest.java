@@ -127,23 +127,23 @@ class GCSFilesReaderTest {
 		), results);
 	}
 
-//
-//	@Test
-//	void testReadingBytesFromGCS_withOffsetsAtEndOfFile() throws IOException {
-//		final Storage client = storageClient;
-//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
-//		givenSomeDataWithKeys(client, dir);
-//
-//		// this file will be skipped
-//		List<String> results = whenTheRecordsAreRead(givenAReaderWithOffsets(client,
-//			"prefix/2015-12-30/topic-00003-000000000000.gz", 1L, "00003"));
-//
-//		assertEquals(
-//			IntStream.range(1, 10)
-//				.mapToObj(i -> String.format("willbe=skipped%d[skipped header key%d:skipped header value%d]", i, i, i))
-//				.collect(toList()),
-//			results);
-//	}
+
+	@Test
+	void testReadingBytesFromGCS_withOffsetsAtEndOfFile() throws IOException {
+		final Storage client = storageClient;
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenSomeDataWithKeys(client, dir);
+
+		// this file will be skipped
+		List<String> results = whenTheRecordsAreRead(givenAReaderWithOffsets(client,
+			"prefix/2015-12-30/topic-00003-000000000000.gz", 1L, "00003"));
+
+		assertEquals(
+			IntStream.range(1, 10)
+				.mapToObj(i -> String.format("willbe=skipped%d[skipped header key%d:skipped header value%d]", i, i, i))
+				.collect(toList()),
+			results);
+	}
 
 	GCSFilesReader givenAReaderWithOffsets(Storage client, String marker, long nextOffset, final String partition) {
 		Map<GCSPartition, GCSOffset> offsets = new HashMap<>();
@@ -191,17 +191,17 @@ class GCSFilesReaderTest {
 //		}
 //	}
 //
-//	@Test
-//	void testReadingBytesFromGCS_withoutKeys() throws IOException {
-//		final Storage client = storageClient;
-//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
-//		givenSomeDataWithoutKeys(client, dir);
-//
-//		List<String> results = whenTheRecordsAreRead(client, false);
-//
-//		theTheyAreInOrderWithoutKeys(results);
-//	}
-//
+	@Test
+	void testReadingBytesFromGCS_withoutKeys() throws IOException {
+		final Storage client = storageClient;
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenSomeDataWithoutKeys(client, dir);
+
+		List<String> results = whenTheRecordsAreRead(client, false);
+
+		thenTheyAreInOrderWithoutKeys(results);
+	}
+
 //	Converter givenACustomConverter() {
 //		Map<String, Object> config = new HashMap<>();
 //		config.put("converter", AlreadyBytesConverter.class.getName());
@@ -209,16 +209,16 @@ class GCSFilesReaderTest {
 //		config.put("converter.converter.requiredProp", "isPresent");
 //		return Configure.buildConverter(config, "converter", false, null);
 //	}
-//
-//	void theTheyAreInOrderWithoutKeys(List<String> results) {
-//		List<String> expected = Arrays.asList(
-//			"value0-0[header key 0-0:header value 0-0]",
-//			"value1-0[header key 1-0:header value 1-0]",
-//			"value1-1[header key 1-1:header value 1-1]"
-//		);
-//		assertEquals(expected, results);
-//	}
-//
+
+	void thenTheyAreInOrderWithoutKeys(List<String> results) {
+		List<String> expected = Arrays.asList(
+			"value0-0[header key 0-0:header value 0-0]",
+			"value1-0[header key 1-0:header value 1-0]",
+			"value1-1[header key 1-1:header value 1-1]"
+		);
+		assertEquals(expected, results);
+	}
+
 	private void thenTheyAreInOrder(List<String> results) {
 		List<String> expected = Arrays.asList(
 			"key0-0=value0-0[header key 0-0:header value 0-0]",
@@ -242,12 +242,6 @@ class GCSFilesReaderTest {
 			() -> new BytesRecordReader(fileIncludesKeys)
 		);
 		return whenTheRecordsAreRead(reader);
-//		Page<Blob> blobs =
-//			storage.list(
-//				bucketName,
-//				Storage.BlobListOption.prefix("prefix/2016-01-01"),
-//				Storage.BlobListOption.currentDirectory());
-//		return whenTheRecordsAreRead(storage, blobs);
 	}
 
 	private List<String> whenTheRecordsAreRead(GCSFilesReader reader) {
@@ -261,21 +255,9 @@ class GCSFilesReaderTest {
 
 			results.add(key + value + "[" + headers + "]");
 		}
-//		for (Blob blob : blobs.iterateAll()) {
-//			String objectName = blob.getName(); // what if null?
-//			byte[] content = storage.readAllBytes(bucketName, objectName);
-//		}
-
-//		System.out.println(
-//			"The contents of "
-//				+ objectName
-//				+ " from bucket name "
-//				+ bucketName
-//				+ " are: "
-//				+ new String(content, StandardCharsets.UTF_8));
 		return results;
 	}
-//
+
 	private void givenASingleDayWithManyPartitions(Storage client, Path dir) throws IOException {
 		givenASingleDayWithManyPartitions(client, dir, true);
 	}
@@ -295,11 +277,11 @@ class GCSFilesReaderTest {
 	private void givenSomeDataWithKeys(Storage client, Path dir) throws IOException {
 		givenSomeData(client, dir, true);
 	}
-//
-//	private void givenSomeDataWithoutKeys(Storage client, Path dir) throws IOException {
-//		givenSomeData(client, dir, false);
-//	}
-//
+
+	private void givenSomeDataWithoutKeys(Storage client, Path dir) throws IOException {
+		givenSomeData(client, dir, false);
+	}
+
 	private void givenSomeData(Storage client, Path dir, boolean includeKeys) throws IOException {
 		new File(dir.toFile(), "prefix/2015-12-30").mkdirs();
 		new File(dir.toFile(), "prefix/2015-12-31").mkdirs();
@@ -326,17 +308,6 @@ class GCSFilesReaderTest {
 	}
 
 	private void uploadToGCS(Storage storage, Path dir) throws IOException {
-//		TransferManager tm = TransferManagerBuilder.standard().withGCSClient(client).build();
-//		Files.walk(dir).filter(Files::isRegularFile).forEach(f -> {
-//			Path relative = dir.relativize(f);
-//			System.out.println("Writing " + relative.toString());
-//			Upload upload = tm.upload(bucketName, relative.toString(), f.toFile());
-//			try {
-//				upload.waitForUploadResult();
-//			} catch (Exception ex) {
-//				throw new RuntimeException(ex);
-//			}
-//		});
 		// Optional: set a generation-match precondition to avoid potential race
 		// conditions and data corruptions. The request returns a 412 error if the
 		// preconditions are not met.
