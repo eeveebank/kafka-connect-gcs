@@ -3,7 +3,6 @@ description = "Tests against real Kafka Connect"
 dependencies {
 	api project(':sink')
 	api project(':source')
-
 	testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
 	testImplementation "org.testcontainers:testcontainers:1.17.3"
 	testImplementation "org.testcontainers:junit-jupiter:1.17.3"
@@ -18,6 +17,7 @@ dependencies {
 	testImplementation group: 'com.netflix.curator', name: 'curator-test', version: '1.2.6'
 
 	testImplementation(group: 'com.spotify', name: 'docker-client', version: '8.16.0')
+	testImplementation("com.google.cloud:google-cloud-storage:2.13.1")
 }
 
 test {

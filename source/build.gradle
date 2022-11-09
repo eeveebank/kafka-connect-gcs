@@ -2,13 +2,14 @@ description = "Kafka Connect Source that reads from S3"
 
 dependencies {
 	api project(':common')
-
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0'
 	testImplementation project(':sink')
 	testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
 	testImplementation "org.testcontainers:testcontainers:1.17.3"
 	testImplementation "org.testcontainers:localstack:1.17.3"
 	testImplementation "org.testcontainers:junit-jupiter:1.17.3"
 	testImplementation group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
+	implementation "com.google.cloud:google-cloud-storage:2.13.1"
 }
 
 test {
