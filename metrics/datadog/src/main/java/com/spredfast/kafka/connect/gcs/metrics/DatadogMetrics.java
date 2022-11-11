@@ -24,7 +24,7 @@ import com.spredfast.kafka.connect.gcs.Metrics;
 /**
  * Reports metrics via https://github.com/coursera/metrics-datadog
  *
- * Config: https://github.com/spredfast/kafka-connect-s3/wiki/Metrics
+ * Config: https://github.com/spredfast/kafka-connect-gcs/wiki/Metrics
  *
  */
 public class DatadogMetrics implements Metrics {
