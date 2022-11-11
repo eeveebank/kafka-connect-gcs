@@ -1,4 +1,4 @@
-rootProject.name = 'kafka-connect-s3'
+rootProject.name = 'kafka-connect-gcs'
 
 include 'api'
 include 'common'
@@ -8,4 +8,3 @@ include 'system_test'
 
 include ':metrics-datadog'
 project(':metrics-datadog').projectDir = new File('./metrics/datadog')
-
