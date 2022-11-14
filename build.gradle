@@ -84,8 +84,8 @@ artifacts {
 }
 
 ext {
-	pomHumanName = 'Kafka Connect S3'
-	pomDesc = 'S3 Source and Sink Connectors for Kafka Connect'
+	pomHumanName = 'Kafka Connect GCS'
+	pomDesc = 'GCS Source and Sink Connectors for Kafka Connect'
 }
 
 test {
