@@ -55,7 +55,6 @@ import static java.util.stream.Collectors.toList;
 public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 
 	private static final Logger log = LoggerFactory.getLogger(GCSFilesReader.class);
-
 	public static final Pattern DEFAULT_PATTERN = Pattern.compile(
 		"(\\/|^)"                        // match the / or the start of the key so we shouldn't have to worry about prefix
 			+ "(?<topic>[^/]+?)-"            // assuming no / in topic names
