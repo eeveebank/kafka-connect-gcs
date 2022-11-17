@@ -11,18 +11,16 @@ import com.google.cloud.storage.StorageOptions;
 import java.util.Map;
 import java.util.Objects;
 
-//import static com.amazonaws.services.s3.AmazonS3Client.S3_SERVICE_NAME;
-//import static com.amazonaws.util.AwsHostNameUtils.parseRegion;
 import static java.lang.Boolean.parseBoolean;
 
 public class GCS {
 
 	public static Storage gcsclient(Map<String, String> config) {
-		// Use default credentials provider that looks in Env + Java properties + profile + instance role
-
+		// https://cloud.google.com/docs/authentication/client-libraries#example
 		StorageOptions.Builder builder = StorageOptions.newBuilder();
 
 		setGCSEndpoint(config, builder);
+		setProjectId(config, builder);
 		Storage storage = builder
 			.build()
 			.getService();
@@ -34,6 +32,13 @@ public class GCS {
 		String gcsEndpoint = config.get("gcs.endpoint");
 		if (gcsEndpoint != null && !Objects.equals(gcsEndpoint, "")) {
 			builder.setHost(gcsEndpoint);
+		}
+	}
+
+	private static void setGCSEndpoint(Map<String, String> config, StorageOptions.Builder builder) {
+		String projectId = config.get("projectId");
+		if (projectId != null && !Objects.equals(projectId, "")) {
+			builder.setProjectId(projectId);
 		}
 	}
 
