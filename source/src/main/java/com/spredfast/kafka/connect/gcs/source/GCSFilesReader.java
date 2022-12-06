@@ -131,7 +131,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			String currentKey;
 
 			//ObjectListing objectListing;
-			Page<Blob> blobs;
+			Page<Blob> page;
 			Iterator<Blob> nextFile = Collections.emptyIterator();
 			Iterator<ConsumerRecord<byte[], byte[]>> iterator = Collections.emptyIterator();
 
@@ -142,23 +142,27 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					// i.e., all of partition 0 will be read before partition 1. Seems like that will make perf wonky if
 					// there is an active, multi-partition consumer on the other end.
 					// to mitigate that, have as many tasks as partitions.
-					if (blobs == null) {
+					if (page == null) {
 						// https://github.com/googleapis/java-storage/blob/583bf73f5d58aa5d79fbaa12b24407c558235eed/samples/snippets/src/main/java/com/example/storage/object/ListObjectsWithPrefix.java
 						if (config.startMarker == null) {
-							blobs = storage.list(
-								config.bucket,
-								Storage.BlobListOption.prefix(config.keyPrefix)
-							);
-						} else {
-							blobs = storage.list(
+							page = storage.list(
 								config.bucket,
 								Storage.BlobListOption.prefix(config.keyPrefix),
-								Storage.BlobListOption.startOffset(config.startMarker)
+								Storage.BlobListOption.pageSize(config.pageSize)
+							);
+						} else {
+							page = storage.list(
+								config.bucket,
+								Storage.BlobListOption.prefix(config.keyPrefix),
+								Storage.BlobListOption.startOffset(config.startMarker),
+								Storage.BlobListOption.pageSize(config.pageSize)
 							);
 						}
+					} else {
+						page = page.getNextPage();
 					}
 					List<Blob> chunks = new ArrayList<>();
-					for (Blob blob: blobs.iterateAll()) {
+					for (Blob blob: page.iterateAll()) {
 						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
 							GCSOffset offset = offset(blob);
@@ -315,7 +319,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			}
 
 			boolean hasMoreObjects() {
-				return blobs == null /*|| objectListing.isTruncated()*/ || nextFile.hasNext();
+				return page == null || page.hasNextPage() || nextFile.hasNext();
 			}
 
 			@Override

@@ -4,7 +4,7 @@ machine:
 
 dependencies:
   pre:
-    - docker pull lphoward/fake-s3 # pre-cache for integration tests
+    - docker pull fsouza/fake-gcs-server # pre-cache for integration tests
 
 test:
   post:
