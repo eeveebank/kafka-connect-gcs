@@ -35,7 +35,7 @@ public class GCS {
 		}
 	}
 
-	private static void setGCSEndpoint(Map<String, String> config, StorageOptions.Builder builder) {
+	private static void setProjectId(Map<String, String> config, StorageOptions.Builder builder) {
 		String projectId = config.get("projectId");
 		if (projectId != null && !Objects.equals(projectId, "")) {
 			builder.setProjectId(projectId);
