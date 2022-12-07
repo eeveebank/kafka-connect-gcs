@@ -143,6 +143,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					// there is an active, multi-partition consumer on the other end.
 					// to mitigate that, have as many tasks as partitions.
 					if (page == null) {
+						log.debug("creating page from null with pageSize {}", config.pageSize);
 						// https://github.com/googleapis/java-storage/blob/583bf73f5d58aa5d79fbaa12b24407c558235eed/samples/snippets/src/main/java/com/example/storage/object/ListObjectsWithPrefix.java
 						if (config.startMarker == null) {
 							page = storage.list(
@@ -163,6 +164,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					}
 					List<Blob> chunks = new ArrayList<>();
 					for (Blob blob: page.iterateAll()) {
+						log.debug("iterating over blobs: now at {}", blob.getName());
 						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {
 							GCSOffset offset = offset(blob);
