@@ -160,10 +160,14 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							);
 						}
 					} else {
+						log.debug("fetch next page");
+						// I think it's never run, as pagination automatically handled in the iterator / for loop
 						page = page.getNextPage();
 					}
 					List<Blob> chunks = new ArrayList<>();
-					for (Blob blob: page.iterateAll()) {
+					// that would automatically handle paging, i.e. build an array too big and never flushed
+					// for (Blob blob: page.iterateAll()) {
+					for (Blob blob : page.getValues()) {
 						log.debug("iterating over blobs: now at {}", blob.getName());
 						if (DATA_SUFFIX.matcher(blob.getName()).find() && parseKeyUnchecked(blob.getName(),
 							(t, p, o) -> config.partitionFilter.matches(t, p))) {

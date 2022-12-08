@@ -202,14 +202,6 @@ class GCSFilesReaderTest {
 		thenTheyAreInOrderWithoutKeys(results);
 	}
 
-//	Converter givenACustomConverter() {
-//		Map<String, Object> config = new HashMap<>();
-//		config.put("converter", AlreadyBytesConverter.class.getName());
-//		config.put("converter.converter", ReversedStringBytesConverter.class.getName());
-//		config.put("converter.converter.requiredProp", "isPresent");
-//		return Configure.buildConverter(config, "converter", false, null);
-//	}
-
 	void thenTheyAreInOrderWithoutKeys(List<String> results) {
 		List<String> expected = Arrays.asList(
 			"value0-0[header key 0-0:header value 0-0]",
@@ -282,6 +274,10 @@ class GCSFilesReaderTest {
 		givenSomeData(client, dir, false);
 	}
 
+//	private void givenSomeData(Storage client, Path dir, boolean includeKeys, Converter valueConverter) throws IOException {
+//		givenSomeData(client, dir, includeKeys);
+//	}
+
 	private void givenSomeData(Storage client, Path dir, boolean includeKeys) throws IOException {
 		new File(dir.toFile(), "prefix/2015-12-30").mkdirs();
 		new File(dir.toFile(), "prefix/2015-12-31").mkdirs();
@@ -333,5 +329,27 @@ class GCSFilesReaderTest {
 			new ProducerRecord<>("", 0, key, value, headers)
 		)).collect(toList()), 1);
 	}
+
+//	Converter givenACustomConverter() {
+//		Map<String, Object> config = new HashMap<>();
+//		config.put("converter", AlreadyBytesConverter.class.getName());
+//		config.put("converter.converter", ReversedStringBytesConverter.class.getName());
+//		config.put("converter.converter.requiredProp", "isPresent");
+//		return Configure.buildConverter(config, "converter", false, null);
+//	}
+//
+//
+//	@Test
+//	public void testReadingBytesFromGCS_withoutKeysAndACustomConverter() throws IOException {
+//		final Storage client = storageClient;
+//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+//		givenSomeData(storageClient, dir, true, givenACustomConverter());
+//
+//		final AmazonS3 client = givenAMockS3Client(dir);
+//
+//		List<String> results = whenTheRecordsAreRead(client, false);
+//
+//		theTheyAreReversedAndInOrder(results);
+//	}
 
 }
