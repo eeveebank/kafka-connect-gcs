@@ -179,7 +179,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							chunks.add(blob);
 						}
 					}
-					log.debug("Next Chunks: {}", LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
+					log.debug("Next Chunks: {} {}", chunks.stream().count() ,LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {
