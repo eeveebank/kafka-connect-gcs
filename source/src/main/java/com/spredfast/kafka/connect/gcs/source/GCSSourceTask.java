@@ -40,6 +40,7 @@ public class GCSSourceTask extends SourceTask {
 	private long gcsPollInterval = 10_000L;
 	private long errorBackoff = 1000L;
 	private Map<GCSPartition, GCSOffset> offsets;
+	public GCSSourceConfig gcsSourceConfig; // public for testing
 
 	@Override
 	public String version() {
@@ -107,11 +108,11 @@ public class GCSSourceTask extends SourceTask {
 		Storage client = GCS.gcsclient(taskConfig);
 
 
-		GCSSourceConfig config = buildConfig(partitionNumbers);
+		gcsSourceConfig = buildConfig(partitionNumbers);
 
 		log.debug("{} reading from GCS with offsets {}", name(), offsets);
 
-		reader = new GCSFilesReader(config, client, offsets, format::newReader).readAll();
+		reader = new GCSFilesReader(gcsSourceConfig, client, offsets, format::newReader).readAll();
 	}
 
 	private GCSSourceConfig buildConfig(Set<Integer> partitionNumbers) {
