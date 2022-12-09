@@ -167,6 +167,7 @@ and [format settings](https://github.com/spredfast/kafka-connect-gcs/wiki/Sink-C
 | gcs.endpoint | GCS defaults per region | Mostly useful for testing. |
 | gcs.path_style | `false` | Force path-style access to bucket rather than subdomain. Mostly useful for tests. Not used? |
 | compressed_block_size | 67108864 | How much _uncompressed_ data to write to the file before we rol to a new block/chunk. See [Block-GZIP](#user-content-block-gzip-output-format) section above. |
+| projectId | null | The project id where the bucket sits - defaults to current project, not tested for a different project
 
 Note that we use the default AWS SDK credentials provider. [Refer to their docs](http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/credentials.html#id1) for the options for configuring GCS credentials.
 
@@ -174,11 +175,16 @@ These additional configs apply to the Source connector:
 
 | Config Key | Default | Notes |
 | ---------- | ------- | ----- |
-| max.poll.records | 1000 | The number of records to return in a single poll of GCS |
-| s3.page.size | 100 | The number of objects we list from GCS in one request |
 | max.partition.count | 200 | The maximum number of partitions a topic can have. Partitions over this number will not be processed. |
+| max.poll.records | 1000 | The number of records to return in a single poll of GCS |
 | targetTopic.${original} | none | If you want the source to send records to an different topic than the original. e.g., targetTopic.foo=bar would send messages originally in topic foo to topic bar. |
-| s3.start.marker | `null` | [List-Object Marker](http://docs.aws.amazon.com/cli/latest/reference/s3api/list-objects.html#output). GCS object key or key prefix to start reading from. |
+| gcs.page.size | 100 | The number of objects we list from GCS in one request |
+| gcs.start.marker | `null` | [List-Object Marker](http://docs.aws.amazon.com/cli/latest/reference/s3api/list-objects.html#output). GCS object key or key prefix to start reading from. |
+| gcs.new.record.poll.interval | 10000 | How long to wait to check for new records in the bucket (in ms) |
+| gcs.error.backoff | 1000 | How long to wait to try again retryable errors (in ms) |
+| topics | null | Topics to rehydrate - leave null to rehydrate all topics
+| topics.ignore | null | Topics to ignore / not rehydrate (for example deleted topics) - can be used together with the "topics" config |
+
 
 ## Contributing
 
