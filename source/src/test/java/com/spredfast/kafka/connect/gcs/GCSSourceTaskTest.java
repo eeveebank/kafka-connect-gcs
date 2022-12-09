@@ -29,8 +29,6 @@ import java.util.stream.StreamSupport;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// inspired by https://github.com/gunnarmorling/kcetcd/blob/main/src/test/java/dev/morling/kcetcd/source/EtcdSourceTaskTest.java
-
 class GCSSourceTaskTest {
 
 	GCSFilesReader.PartitionFilter partitionFilter;
