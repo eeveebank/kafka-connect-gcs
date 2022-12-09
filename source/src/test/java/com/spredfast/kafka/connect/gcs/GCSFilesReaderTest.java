@@ -1,22 +1,7 @@
 package com.spredfast.kafka.connect.gcs;
-
-import com.google.api.gax.paging.Page;
-import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
-import com.google.cloud.NoCredentials;
-//import com.amazonaws.services.gcs.AmazonGCS;
-//import com.amazonaws.services.gcs.transfer.TransferManager;
-//import com.amazonaws.services.gcs.transfer.TransferManagerBuilder;
-//import com.amazonaws.services.gcs.transfer.Upload;
-import com.spredfast.kafka.connect.gcs.BlockGZIPFileWriter;
-//import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
-//import com.spredfast.kafka.connect.gcs.source.GCSOffset;
-//import com.spredfast.kafka.connect.gcs.source.GCSPartition;
-//import com.spredfast.kafka.connect.gcs.source.GCSSourceConfig;
-//import com.spredfast.kafka.connect.gcs.source.GCSSourceRecord;
 import com.spredfast.kafka.connect.gcs.source.GCSFilesReader;
 import com.spredfast.kafka.connect.gcs.source.GCSOffset;
 import com.spredfast.kafka.connect.gcs.source.GCSPartition;
@@ -26,21 +11,15 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.SchemaAndValue;
-import org.apache.kafka.connect.storage.Converter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -168,29 +147,6 @@ class GCSFilesReaderTest {
 		);
 	}
 
-//	static class ReversedStringBytesConverter implements Converter {
-//		@Override
-//		public void configure(Map<String, ?> configs, boolean isKey) {
-//			// while we're here, verify that we get our subconfig
-//			assertEquals("isPresent", configs.get("requiredProp"));
-//		}
-//
-//		@Override
-//		public byte[] fromConnectData(String topic, Schema schema, Object value) {
-//			byte[] bytes = value.toString().getBytes(Charset.forName("UTF-8"));
-//			byte[] result = new byte[bytes.length];
-//			for (int i = 0; i < bytes.length; i++) {
-//				result[bytes.length - i - 1] = bytes[i];
-//			}
-//			return result;
-//		}
-//
-//		@Override
-//		public SchemaAndValue toConnectData(String topic, byte[] value) {
-//			throw new UnsupportedOperationException();
-//		}
-//	}
-//
 	@Test
 	void testReadingBytesFromGCS_withoutKeys() throws IOException {
 		final Storage client = storageClient;
@@ -329,27 +285,5 @@ class GCSFilesReaderTest {
 			new ProducerRecord<>("", 0, key, value, headers)
 		)).collect(toList()), 1);
 	}
-
-//	Converter givenACustomConverter() {
-//		Map<String, Object> config = new HashMap<>();
-//		config.put("converter", AlreadyBytesConverter.class.getName());
-//		config.put("converter.converter", ReversedStringBytesConverter.class.getName());
-//		config.put("converter.converter.requiredProp", "isPresent");
-//		return Configure.buildConverter(config, "converter", false, null);
-//	}
-//
-//
-//	@Test
-//	public void testReadingBytesFromGCS_withoutKeysAndACustomConverter() throws IOException {
-//		final Storage client = storageClient;
-//		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
-//		givenSomeData(storageClient, dir, true, givenACustomConverter());
-//
-//		final AmazonS3 client = givenAMockS3Client(dir);
-//
-//		List<String> results = whenTheRecordsAreRead(client, false);
-//
-//		theTheyAreReversedAndInOrder(results);
-//	}
 
 }

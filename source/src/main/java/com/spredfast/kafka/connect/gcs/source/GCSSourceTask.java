@@ -40,6 +40,7 @@ public class GCSSourceTask extends SourceTask {
 	private long gcsPollInterval = 10_000L;
 	private long errorBackoff = 1000L;
 	private Map<GCSPartition, GCSOffset> offsets;
+	public GCSSourceConfig gcsSourceConfig; // public for testing
 
 	@Override
 	public String version() {
@@ -107,6 +108,28 @@ public class GCSSourceTask extends SourceTask {
 		Storage client = GCS.gcsclient(taskConfig);
 
 
+		gcsSourceConfig = buildConfig(partitionNumbers);
+
+		log.debug("{} reading from GCS with offsets {}", name(), offsets);
+
+		reader = new GCSFilesReader(gcsSourceConfig, client, offsets, format::newReader).readAll();
+	}
+
+	private GCSSourceConfig buildConfig(Set<Integer> partitionNumbers) {
+
+		String bucket = configGet("gcs.bucket").orElseThrow(() -> new ConnectException("No bucket configured!"));
+		String prefix = configGet("gcs.prefix").orElse("");
+
+		Set<String> topics = configGet("topics")
+			.map(Object::toString)
+			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
+			.orElseGet(HashSet::new);
+
+		Set<String> topicsToIgnore = configGet("topics.ignore")
+			.map(Object::toString)
+			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
+			.orElseGet(HashSet::new);
+
 		GCSSourceConfig config = new GCSSourceConfig(
 			bucket, prefix,
 			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
@@ -114,13 +137,11 @@ public class GCSSourceTask extends SourceTask {
 			GCSFilesReader.DEFAULT_PATTERN,
 			GCSFilesReader.InputFilter.GUNZIP,
 			GCSFilesReader.PartitionFilter.from((topic, partition) ->
-				(topics.isEmpty() || topics.contains(topic))
+				(topics.isEmpty() || topics.contains(topic)) && (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
 					&& partitionNumbers.contains(partition))
 		);
 
-		log.debug("{} reading from GCS with offsets {}", name(), offsets);
-
-		reader = new GCSFilesReader(config, client, offsets, format::newReader).readAll();
+		return config;
 	}
 
 	private Optional<String> configGet(String key) {
