@@ -9,7 +9,7 @@ dependencies {
 	testImplementation "org.testcontainers:localstack:1.17.3"
 	testImplementation "org.testcontainers:junit-jupiter:1.17.3"
 	testImplementation group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
-	implementation "com.google.cloud:google-cloud-storage:2.13.1"
+	implementation "com.google.cloud:google-cloud-storage:2.15.1"
 }
 
 test {
