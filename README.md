@@ -182,6 +182,8 @@ These additional configs apply to the Source connector:
 | gcs.start.marker | `null` | [List-Object Marker](http://docs.aws.amazon.com/cli/latest/reference/s3api/list-objects.html#output). GCS object key or key prefix to start reading from. |
 | gcs.new.record.poll.interval | 10000 | How long to wait to check for new records in the bucket (in ms) |
 | gcs.error.backoff | 1000 | How long to wait to try again retryable errors (in ms) |
+| tasks | 1 | If greater than 1, then for each topic, partition `n` will go to task `n` (modulo) - that means there is not much point having more than 4 tasks given that our topics in general have up to 3 partitions - to have more tasks use `tasks.splitTopic = "true"`
+| tasks.splitTopics | "false" | If set to "true", then the topics will be split across tasks  based on a hash of {topicName}-{partition}. This allows setting tasks to a high number.
 | topics | null | Topics to rehydrate - leave null to rehydrate all topics
 | topics.ignore | null | Topics to ignore / not rehydrate (for example deleted topics) - can be used together with the "topics" config |
 
