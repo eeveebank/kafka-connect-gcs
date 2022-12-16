@@ -1,7 +1,6 @@
 package com.spredfast.kafka.connect.gcs.source;
 
 import com.google.cloud.storage.Storage;
-//import com.amazonaws.services.gcs.model.StorageException;
 import com.google.cloud.storage.StorageException;
 import com.spredfast.kafka.connect.gcs.AlreadyBytesConverter;
 import com.spredfast.kafka.connect.gcs.Configure;
@@ -15,11 +14,6 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -161,14 +155,6 @@ public class GCSSourceTask extends SourceTask {
 		byte[] bytesOfMessage = new byte[0];
 		int taskNum = Integer.parseInt(configGet("taskNum").get());
 		int taskCount = Integer.parseInt(configGet("taskCount").get());
-//			bytesOfMessage = topicName.getBytes("UTF-8");
-//			MessageDigest md = null;
-//			md = MessageDigest.getInstance("MD5");
-//			md.update(bytesOfMessage);
-//			byte[] digest = md.digest();
-//			String hashedTopicName = digest.toString();
-//			char inputLetterToLowerCase= Character.toLowerCase(hashedTopicName.charAt(0));
-//			int asciiValueOfinputChar = (int)inputLetterToLowerCase;
 		int hashCode = hash(topicName);
 		log.debug("hashCode for {} is {}", topicName, hashCode);
 		return hashCode % taskCount == taskNum;
