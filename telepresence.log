@@ -1,0 +1,169 @@
+   0.0 TEL | Telepresence 0.108 launched at Mon Dec 12 16:14:22 2022
+   0.0 TEL |   /usr/local/bin/telepresence --deployment telepresence --also-proxy kafka-mettle.dev-mettle.internal --also-proxy kafka-mettle-0.dev-mettle.internal --also-proxy kafka-mettle-1.dev-mettle.internal --also-proxy kafka-mettle-2.dev-mettle.internal --also-proxy kafka-mettle-3.dev-mettle.internal --also-proxy kafka-mettle-4.dev-mettle.internal --also-proxy kafka-mettle-5.dev-mettle.internal --also-proxy schema-registry.confluent.svc.cluster.local --also-proxy schema-registry.ssv.svc.cluster.local --also-proxy mysql-eevee.external.svc.cluster.local
+   0.0 TEL | uname: uname_result(system='Darwin', node='M-C02G32JPMD6R', release='21.6.0', version='Darwin Kernel Version 21.6.0: Wed Aug 10 14:25:27 PDT 2022; root:xnu-8020.141.5~2/RELEASE_X86_64', machine='x86_64')
+   0.0 TEL | Platform: darwin
+   0.0 TEL | WSL: False
+   0.0 TEL | Python 3.10.1 (main, Jan 19 2022, 14:13:56) [Clang 12.0.5 (clang-1205.0.22.11)]
+   0.0 TEL | BEGIN SPAN main.py:40(main)
+   0.0 TEL | BEGIN SPAN startup.py:83(set_kube_command)
+   0.0 TEL | Found kubectl -> /usr/local/bin/kubectl
+   0.0 TEL | [1] Capturing: kubectl config current-context
+   0.1 TEL | [1] captured in 0.04 secs.
+   0.1 TEL | [2] Capturing: kubectl --context dev version --short
+   0.1   2 | Flag --short has been deprecated, and will be removed in the future. The --short output will become the default.
+   0.2   2 | WARNING: version difference between client (1.24) and server (1.21) exceeds the supported minor version skew of +/-1
+   0.2 TEL | [2] captured in 0.19 secs.
+   0.2 TEL | [3] Capturing: kubectl --context dev config view -o json
+   0.3 TEL | [3] captured in 0.04 secs.
+   0.3 TEL | [4] Capturing: kubectl --context dev api-versions
+   0.6 TEL | [4] captured in 0.27 secs.
+   0.6 TEL | Command: kubectl 1.24.1
+   0.6 TEL | Context: dev, namespace: default, version: 4.5.4
+   0.6 >>> | Warning: Telepresence has only been testing on version 1.* clusters
+   0.6 >>> | Warning: kubectl 1.24.1 may not work correctly with cluster version 4.5.4 due to the version discrepancy. See https://kubernetes.io/docs/setup/version-skew-policy/ for more information.
+   0.6 >>> | 
+   0.6 TEL | END SPAN startup.py:83(set_kube_command)    0.6s
+   0.6 >>> | Using a Pod instead of a Deployment for the Telepresence proxy. If you experience problems, please file an issue!
+   0.6 >>> | Set the environment variable TELEPRESENCE_USE_DEPLOYMENT to any non-empty value to force the old behavior, e.g.,
+   0.6 >>> |     env TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --run curl hello
+   0.6 >>> | 
+   0.6 TEL | [5] Capturing: kubectl --context dev --namespace default get deploy telepresence -o json
+   0.7   5 | {
+   0.7   5 |     "apiVersion": "apps/v1",
+   0.7   5 |     "kind": "Deployment",
+   0.7   5 |     "metadata": {
+   0.7   5 |         "annotations": {
+   0.7   5 |             "argocd.argoproj.io/tracking-id": "telepresence:apps/Deployment:default/telepresence",
+   0.7   5 |             "deployment.kubernetes.io/revision": "2",
+   0.7   5 |             "helm.fluxcd.io/antecedent": "default:helmrelease/telepresence",
+   0.7   5 |             "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"argocd.argoproj.io/tracking-id\":\"telepresence:apps/Deployment:default/telepresence\",\"reloader.stakater.com/auto\":\"true\"},\"labels\":{\"app_name\":\"telepresence\",\"app_version\":\"0.108\",\"maintained_by\":\"mettle\"},\"name\":\"telepresence\",\"namespace\":\"default\"},\"spec\":{\"replicas\":3,\"selector\":{\"matchLabels\":{\"app_name\":\"telepresence\"}},\"strategy\":{\"rollingUpdate\":{\"maxSurge\":1,\"maxUnavailable\":1},\"type\":\"RollingUpdate\"},\"template\":{\"metadata\":{\"labels\":{\"app_name\":\"telepresence\",\"app_version\":\"0.108\",\"maintained_by\":\"mettle\"}},\"spec\":{\"containers\":[{\"image\":\"docker.io/datawire/telepresence-k8s:0.108\",\"name\":\"telepresence\"}],\"serviceAccountName\":\"telepresence\"}}}}\n",
+   0.7   5 |             "policies.kyverno.io/last-applied-patches": "add-datadog-env.add-datadog-labels.kyverno.io: added /metadata/labels/tags.datadoghq.com~1env\nspread-pods-across-zones.spread-pods-across-zones.kyverno.io: added /spec/template/spec/topologySpreadConstraints\n",
+   0.7   5 |             "reloader.stakater.com/auto": "true"
+   0.7   5 |         },
+   0.7   5 |         "creationTimestamp": "2021-06-24T14:24:20Z",
+   0.7   5 |         "generation": 3,
+   0.7   5 |         "labels": {
+   0.7   5 |             "app_name": "telepresence",
+   0.7   5 |             "app_version": "0.108",
+   0.7   5 |             "maintained_by": "mettle",
+   0.7   5 |             "tags.datadoghq.com/env": "dev"
+   0.7   5 |         },
+   0.7   5 |         "name": "telepresence",
+   0.7   5 |         "namespace": "default",
+   0.7   5 |         "resourceVersion": "603634515",
+   0.7   5 |         "uid": "a321e659-c486-4256-8c39-125b2f5ac1ba"
+   0.7   5 |     },
+   0.7   5 |     "spec": {
+   0.7   5 |         "progressDeadlineSeconds": 600,
+   0.7   5 |         "replicas": 3,
+   0.7   5 |         "revisionHistoryLimit": 10,
+   0.7   5 |         "selector": {
+   0.7   5 |             "matchLabels": {
+   0.7   5 |                 "app_name": "telepresence"
+   0.7   5 |             }
+   0.7   5 |         },
+   0.7   5 |         "strategy": {
+   0.7   5 |             "rollingUpdate": {
+   0.7   5 |                 "maxSurge": 1,
+   0.7   5 |                 "maxUnavailable": 1
+   0.7   5 |             },
+   0.7   5 |             "type": "RollingUpdate"
+   0.7   5 |         },
+   0.7   5 |         "template": {
+   0.7   5 |             "metadata": {
+   0.7   5 |                 "creationTimestamp": null,
+   0.7   5 |                 "labels": {
+   0.7   5 |                     "app_name": "telepresence",
+   0.7   5 |                     "app_version": "0.108",
+   0.7   5 |                     "maintained_by": "mettle"
+   0.7   5 |                 }
+   0.7   5 |             },
+   0.7   5 |             "spec": {
+   0.7   5 |                 "containers": [
+   0.7   5 |                     {
+   0.7   5 |                         "image": "docker.io/datawire/telepresence-k8s:0.108",
+   0.7   5 |                         "imagePullPolicy": "IfNotPresent",
+   0.7   5 |                         "name": "telepresence",
+   0.7   5 |                         "resources": {},
+   0.7   5 |                         "terminationMessagePath": "/dev/termination-log",
+   0.7   5 |                         "terminationMessagePolicy": "File"
+   0.7   5 |                     }
+   0.7   5 |                 ],
+   0.7   5 |                 "dnsPolicy": "ClusterFirst",
+   0.7   5 |                 "restartPolicy": "Always",
+   0.7   5 |                 "schedulerName": "default-scheduler",
+   0.7   5 |                 "securityContext": {},
+   0.7   5 |                 "serviceAccount": "telepresence",
+   0.7   5 |                 "serviceAccountName": "telepresence",
+   0.7   5 |                 "terminationGracePeriodSeconds": 30,
+   0.7   5 |                 "topologySpreadConstraints": [
+   0.7   5 |                     {
+   0.7   5 |                         "labelSelector": {
+   0.7   5 |                             "matchLabels": {
+   0.7   5 |                                 "app_name": "telepresence"
+   0.7   5 |                             }
+   0.7   5 |                         },
+   0.7   5 |                         "maxSkew": 1,
+   0.7   5 |                         "topologyKey": "topology.kubernetes.io/zone",
+   0.7   5 |                         "whenUnsatisfiable": "DoNotSchedule"
+   0.7   5 |                     }
+   0.7   5 |                 ]
+   0.7   5 |             }
+   0.7   5 |         }
+   0.7   5 |     },
+   0.7   5 |     "status": {
+   0.7   5 |         "availableReplicas": 3,
+   0.7   5 |         "conditions": [
+   0.7   5 |             {
+   0.7   5 |                 "lastTransitionTime": "2021-06-24T14:24:20Z",
+   0.7   5 |                 "lastUpdateTime": "2022-11-08T09:54:50Z",
+   0.7   5 |                 "message": "ReplicaSet \"telepresence-574d4bdbf7\" has successfully progressed.",
+   0.7   5 |                 "reason": "NewReplicaSetAvailable",
+   0.7   5 |                 "status": "True",
+   0.7   5 |                 "type": "Progressing"
+   0.7   5 |             },
+   0.7   5 |             {
+   0.7   5 |                 "lastTransitionTime": "2022-12-12T06:50:07Z",
+   0.7   5 |                 "lastUpdateTime": "2022-12-12T06:50:07Z",
+   0.7   5 |                 "message": "Deployment has minimum availability.",
+   0.7   5 |                 "reason": "MinimumReplicasAvailable",
+   0.7   5 |                 "status": "True",
+   0.7   5 |                 "type": "Available"
+   0.7   5 |             }
+   0.7   5 |         ],
+   0.7   5 |         "observedGeneration": 3,
+   0.7   5 |         "readyReplicas": 3,
+   0.7   5 |         "replicas": 3,
+   0.7   5 |         "updatedReplicas": 3
+   0.7   5 |     }
+   0.7   5 | }
+   0.7 TEL | [5] captured in 0.17 secs.
+   0.7 TEL | BEGIN SPAN remote.py:229(get_pod_for_deployment)
+   0.7 TEL | Searching for Telepresence pod:
+   0.7 TEL |   with name telepresence-*
+   0.7 TEL |   with labels {'app_name': 'telepresence', 'app_version': '0.108', 'maintained_by': 'mettle'}
+   0.7 TEL | [6] Capturing: kubectl --context dev --namespace default get pod -o json -l=app_name=telepresence -l=app_version=0.108 -l=maintained_by=mettle
+   0.9 TEL | [6] captured in 0.19 secs.
+   0.9 TEL | Checking telepresence-574d4bdbf7-6wjgp
+   0.9 TEL | Looks like we've found our pod!
+   0.9 TEL | END SPAN remote.py:229(get_pod_for_deployment)    0.2s
+   0.9 TEL | Found ssh -> /usr/bin/ssh
+   0.9 TEL | [7] Capturing: ssh -V
+   0.9 TEL | [7] captured in 0.01 secs.
+   0.9 TEL | Found bash -> /bin/bash
+   0.9 TEL | Found sshuttle-telepresence -> /usr/local/bin/sshuttle-telepresence
+   0.9 TEL | Found pfctl -> /sbin/pfctl
+   0.9 TEL | Found sudo -> /usr/bin/sudo
+   0.9 TEL | [8] Running: sudo -n echo -n
+   1.0   8 | sudo: a password is required
+   1.0 TEL | [8] exit 1 in 0.02 secs.
+   1.0 >>> | How Telepresence uses sudo: https://www.telepresence.io/reference/install#dependencies
+   1.0 >>> | Invoking sudo. Please enter your sudo password.
+   1.0 TEL | [9] Running: sudo echo -n
+  35.7   9 | sudo: a password is required
+  35.7 >>> | Keyboard interrupt (Ctrl-C/Ctrl-Break) pressed
+  35.7 >>> | Exit cleanup in progress
+  35.7 TEL | (Cleanup) Stop time tracking
+  35.7 TEL | END SPAN main.py:40(main)   35.7s
+  35.7 TEL | (Cleanup) Remove temporary directory
+  35.7 TEL | (Cleanup) Save caches

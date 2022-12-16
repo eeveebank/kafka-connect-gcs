@@ -70,7 +70,7 @@ public class GCSSourceTask extends SourceTask {
 		String bucket = configGet("gcs.bucket").orElseThrow(() -> new ConnectException("No bucket configured!"));
 		String prefix = configGet("gcs.prefix").orElse("");
 
-		Set<Integer> partitionNumbers = Arrays.stream(configGet("partitions").orElseThrow(() -> new IllegalStateException("no assigned parititions!?")).split(","))
+		Set<Integer> partitionNumbers = Arrays.stream(configGet("partitions").orElseThrow(() -> new IllegalStateException("no assigned partitions!?")).split(","))
 			.map(Integer::parseInt)
 			.collect(toSet());
 
