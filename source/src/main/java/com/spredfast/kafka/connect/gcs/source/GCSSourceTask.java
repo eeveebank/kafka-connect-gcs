@@ -16,6 +16,10 @@ import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -70,7 +74,9 @@ public class GCSSourceTask extends SourceTask {
 		String bucket = configGet("gcs.bucket").orElseThrow(() -> new ConnectException("No bucket configured!"));
 		String prefix = configGet("gcs.prefix").orElse("");
 
-		Set<Integer> partitionNumbers = Arrays.stream(configGet("partitions").orElseThrow(() -> new IllegalStateException("no assigned partitions!?")).split(","))
+		Set<Integer> partitionNumbers = Arrays.stream(configGet("partitions").orElseThrow(
+				() -> new IllegalStateException("no assigned partitions!?")
+			).split(","))
 			.map(Integer::parseInt)
 			.collect(toSet());
 
@@ -130,6 +136,8 @@ public class GCSSourceTask extends SourceTask {
 			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
 			.orElseGet(HashSet::new);
 
+		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
+
 		GCSSourceConfig config = new GCSSourceConfig(
 			bucket, prefix,
 			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
@@ -137,11 +145,39 @@ public class GCSSourceTask extends SourceTask {
 			GCSFilesReader.DEFAULT_PATTERN,
 			GCSFilesReader.InputFilter.GUNZIP,
 			GCSFilesReader.PartitionFilter.from((topic, partition) ->
-				(topics.isEmpty() || topics.contains(topic)) && (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
-					&& partitionNumbers.contains(partition))
+				(topics.isEmpty() || topics.contains(topic))
+					&& (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
+					&& (splitTopicsAcrossTasks || partitionNumbers.contains(partition))
+					&& (!splitTopicsAcrossTasks || checkIfHashedTopicBelongsToTask(
+						topic+"-"+partition
+				))
+			)
 		);
 
 		return config;
+	}
+
+	private Boolean checkIfHashedTopicBelongsToTask(String topicName) {
+		byte[] bytesOfMessage = new byte[0];
+		int taskNum = Integer.parseInt(configGet("taskNum").get());
+		int taskCount = Integer.parseInt(configGet("taskCount").get());
+//			bytesOfMessage = topicName.getBytes("UTF-8");
+//			MessageDigest md = null;
+//			md = MessageDigest.getInstance("MD5");
+//			md.update(bytesOfMessage);
+//			byte[] digest = md.digest();
+//			String hashedTopicName = digest.toString();
+//			char inputLetterToLowerCase= Character.toLowerCase(hashedTopicName.charAt(0));
+//			int asciiValueOfinputChar = (int)inputLetterToLowerCase;
+		int hashCode = hash(topicName);
+		log.debug("hashCode for {} is {}", topicName, hashCode);
+		return hashCode % taskCount == taskNum;
+	}
+
+	static final int hash(Object key) {
+		//https://stackoverflow.com/a/60554569/4325661
+		int h;
+		return (key == null) ? 0 : -(h = key.hashCode()) ^ (h >>> 16);
 	}
 
 	private Optional<String> configGet(String key) {

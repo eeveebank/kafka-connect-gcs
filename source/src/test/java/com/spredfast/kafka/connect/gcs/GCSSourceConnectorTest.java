@@ -57,13 +57,51 @@ class GCSSourceConnectorTest {
 		//configOverrides.put("partitions", "1,999,2");
 		withConfig(configOverrides);
 		int taskCount = 5;
-		List<Map<String, String>>  taskConfig = connector.taskConfigs(5);
-		assertEquals(5, taskConfig.size());
-		String[] partitions = taskConfig.get(0).get("partitions").split(",");
+		List<Map<String, String>>  taskConfigs = connector.taskConfigs(5);
+		assertEquals(5, taskConfigs.size());
+
+		Map<String, String> taskConfig = taskConfigs.get(0);
+		String[] partitions = taskConfig.get("partitions").split(",");
 		assertEquals(200/taskCount +1, partitions.length);
 		assertEquals("0", Arrays.stream(partitions).findFirst().get());
 		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("5")));
 		assertEquals(false, Arrays.stream(partitions).anyMatch(n -> n.equals("1")));
+
+		taskConfig = taskConfigs.get(1);
+		partitions = taskConfig.get("partitions").split(",");
+		assertEquals(200/taskCount +1, partitions.length);
+		assertEquals("1", Arrays.stream(partitions).findFirst().get());
+		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("6")));
+		assertEquals(false, Arrays.stream(partitions).anyMatch(n -> n.equals("0")));
+
+	}
+
+	@Test
+	void testTaskNumSingleTask() {
+		Map<String, String> configOverrides = new HashMap<>();
+		//configOverrides.put("partitions", "1,999,2");
+		withConfig(configOverrides);
+		List<Map<String, String>>  taskConfigs = connector.taskConfigs(1);
+
+		Map<String, String> taskConfig = taskConfigs.get(0);
+		assertEquals(taskConfig.get("taskNum"), "0");
+
+		assertEquals(taskConfig.get("taskCount"), "1");
+	}
+	@Test
+	void testTaskNumMultiTasks() {
+		Map<String, String> configOverrides = new HashMap<>();
+		//configOverrides.put("partitions", "1,999,2");
+		withConfig(configOverrides);
+		List<Map<String, String>>  taskConfigs = connector.taskConfigs(5);
+
+		Map<String, String> taskConfig = taskConfigs.get(0);
+		assertEquals(taskConfig.get("taskNum"), "0");
+
+		taskConfig = taskConfigs.get(1);
+		assertEquals(taskConfig.get("taskNum"), "1");
+
+		assertEquals(taskConfig.get("taskCount"), "5");
 	}
 
 

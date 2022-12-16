@@ -104,5 +104,42 @@ class GCSSourceTaskTest {
 		assertEquals(false, match3);
 	}
 
+	void checkThatOnlyThisTaskMatches(String topicName, int partition, String taskNumToMatch) throws Exception {
+		Map<String, String> taskConfig = new HashMap<>();
+		String[] taskNums = {"0", "1", "2", "3", "4"};
+		for (int i = 0; i <= taskNums.length - 1; i++) {
+			String taskNum = taskNums[i];
+			taskConfig.put("taskNum", taskNum);
+			taskConfig.put("tasks.splitTopics", "true");
+			taskConfig.put("taskCount", "5");
+			withConfig(taskConfig);
+			assertEquals(partitionFilter.matches(topicName, partition), taskNum.equals(taskNumToMatch) );
+		}
+	}
+
+	@Test
+	void testBuildConfigSplitTopicsAcrossTasks() throws Exception {
+		// it doesn't matter much which value for taskNumToMatch happen to work here - should be one between 0 and 4
+		// but checkThatOnlyThisTaskMatches checks that it works and that 's the only value working
+		// also using different topicName / partition combinations here help seeing that the partitions are roughly balanced
+		String topicName = "eevee-banking-1";
+		checkThatOnlyThisTaskMatches(topicName,0, "1");
+
+		topicName = "eevee-banking-2";
+		checkThatOnlyThisTaskMatches(topicName,0, "0");
+
+		topicName = "eevee-adapter";
+		checkThatOnlyThisTaskMatches(topicName,0, "0");
+
+		topicName = "eevee-albatros";
+		checkThatOnlyThisTaskMatches(topicName,0, "4");
+		checkThatOnlyThisTaskMatches(topicName,1, "2");
+		checkThatOnlyThisTaskMatches(topicName,2, "1");
+		checkThatOnlyThisTaskMatches(topicName,3, "1");
+
+
+
+	}
+
 
 }

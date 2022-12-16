@@ -40,6 +40,8 @@ public class GCSSourceConnector extends SourceConnector {
 		int partitions = Optional.ofNullable(config.get(MAX_PARTITION_COUNT))
 			.map(Integer::parseInt).orElse(DEFAULT_PARTITION_COUNT);
 
+		int[] idx = new int[] { 0 };
+
 		return IntStream.range(0, taskCount).mapToObj(taskNum ->
 			// each task gets every nth partition
 			IntStream.iterate(taskNum, i -> i + taskCount)
@@ -48,6 +50,8 @@ public class GCSSourceConnector extends SourceConnector {
 			.map(parts -> {
 				Map<String, String> task = new HashMap<>(config);
 				task.put("partitions", parts);
+				task.put("taskNum", Integer.toString(idx[0]++));
+				task.put("taskCount", Integer.toString(taskCount));
 				return task;
 			})
 			.collect(toList());
