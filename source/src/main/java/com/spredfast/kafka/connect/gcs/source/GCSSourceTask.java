@@ -84,9 +84,24 @@ public class GCSSourceTask extends SourceTask {
 			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
 			.orElseGet(HashSet::new);
 
+		Set<String> topicsToIgnore = configGet("topics.ignore")
+			.map(Object::toString)
+			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
+			.orElseGet(HashSet::new);
+
+		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
+
 		List<GCSPartition> partitions = partitionNumbers
 			.stream()
-			.flatMap(p -> topics.stream().map(t -> GCSPartition.from(bucket, prefix, t, p)))
+			.flatMap(partition -> topics
+				.stream()
+				.filter(topic -> (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
+					&& (!splitTopicsAcrossTasks || checkIfHashedTopicBelongsToTask(topic+"-"+partition))
+				)
+				.map(topic ->
+					GCSPartition.from(bucket, prefix, topic, partition)
+				)
+			)
 			.collect(toList());
 
 		// need to maintain internal offset state forever. task will be committed and stopped if

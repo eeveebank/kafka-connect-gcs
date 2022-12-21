@@ -42,11 +42,15 @@ public class GCSSourceConnector extends SourceConnector {
 
 		int[] idx = new int[] { 0 };
 
+		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(config.get("tasks.splitTopics"));
+
+		int iter = splitTopicsAcrossTasks ? 1 : taskCount;
+
 		return IntStream.range(0, taskCount).mapToObj(taskNum ->
 			// each task gets every nth partition
-			IntStream.iterate(taskNum, i -> i + taskCount)
+			IntStream.iterate(taskNum, i -> i + iter)
 			.mapToObj(Integer::toString)
-			.limit(partitions / taskCount + 1).collect(joining(",")))
+			.limit(partitions / iter + 1).collect(joining(",")))
 			.map(parts -> {
 				Map<String, String> task = new HashMap<>(config);
 				task.put("partitions", parts);

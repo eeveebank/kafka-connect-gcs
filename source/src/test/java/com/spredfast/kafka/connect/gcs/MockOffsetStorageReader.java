@@ -8,9 +8,11 @@ import java.util.Map;
 class MockOffsetStorageReader implements OffsetStorageReader {
 
 	private String bucketName;
+	private int offset;
 
 	public MockOffsetStorageReader(String theBucketName) {
 		bucketName = theBucketName;
+		offset = 199;
 	};
 
 	public <T> Map<String, Object> offset(Map<String, T> partition) {
@@ -20,17 +22,18 @@ class MockOffsetStorageReader implements OffsetStorageReader {
 
 	public <T> Map<Map<String, T>, Map<String, Object>> offsets(Collection<Map<String, T>> partitions) {
 		Map<Map<String, T>, Map<String, Object>> offsets = new HashMap<>();
-		Map<String, T> key = new HashMap<>();
-		key.put("bucket", (T)bucketName);
-		key.put("keyPrefix", (T)"");
-		key.put("topic", (T)"1");
-		Object nb = "2";
-		key.put("kafkaPartition", (T)nb);
+		for (Map<String, T> partition : partitions) {
+			Map<String, T> key = new HashMap<>();
+			key.put("bucket", (T)bucketName);
+			key.put("keyPrefix", partition.get("keyPrefix"));
+			key.put("topic", partition.get("topic"));
+			key.put("kafkaPartition", partition.get("kafkaPartition"));
+			Map<String, Object> value = new HashMap<>();
+			value.put("gcskey", "dummyKey1");
+			value.put("originalOffset", Long.valueOf(offset));
+			offsets.put(key, value);
+		}
 
-		Map<String, Object> value = new HashMap<>();
-		value.put("gcskey", "dummyKey1");
-		value.put("originalOffset", Long.valueOf(100));
-		offsets.put(key, value);
 		return offsets;
 	}
 

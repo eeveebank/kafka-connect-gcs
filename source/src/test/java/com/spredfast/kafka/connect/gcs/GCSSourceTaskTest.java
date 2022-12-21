@@ -27,12 +27,13 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GCSSourceTaskTest {
 
 	GCSFilesReader.PartitionFilter partitionFilter;
 
-	String BUCKET_NAME = "dummyGCSBucket";
+	String BUCKET_NAME = "dummyBucket";
 
 	void setUp(Map<String, String> taskConfig) throws Exception {
 		SourceTaskContext context = new MockSourceTaskContext(BUCKET_NAME);
@@ -195,12 +196,59 @@ class GCSSourceTaskTest {
 
 		Map<String, String> taskConfig = new HashMap<>();
 		taskConfig.put("gcs.bucket", BUCKET_NAME);
-		taskConfig.put("partitions", "0,1,2");
-		taskConfig.put("topics", "topic1,topic2");
+		String prefix = "prefix";
+		taskConfig.put("gcs.prefix", prefix);
+		int partition = 1;
+		taskConfig.put("partitions", Integer.toString(partition));
+		String topics = "topic1,topic2";
+		taskConfig.put("topics", topics);
 		task.start(taskConfig);
+		int offset = 199; // see MockOffsetStorageReader
+		assertEquals(task.offsets.keySet().size(), 2);
+		for (GCSPartition gcsPartition : task.offsets.keySet()) {
+			assertEquals(BUCKET_NAME, gcsPartition.getBucket());
+			assertEquals(prefix +"/", gcsPartition.getKeyPrefix());
+			assertEquals(partition, gcsPartition.getPartition());
+			assertTrue(topics.contains(gcsPartition.getTopic()));
+			GCSOffset gcsOffset = task.offsets.get(gcsPartition);
+			assertEquals(offset, gcsOffset.getOffset());
+		}
+	}
 
-		assertEquals(true, task.offsets);
+	@Test
+	void testTryReadFromOffsetsSplitTopicsAcrossTasks() throws Exception {
+		FakeGCS gcs = new FakeGCS();;
+		Storage	storageClient = gcs.startAndReturnClient(BUCKET_NAME);
+		SourceTaskContext context = new MockSourceTaskContext(BUCKET_NAME);
+		GCSSourceTask task = new GCSSourceTask();
+		task.initialize(context);
+		task.gcsClient = storageClient;
 
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenASingleDayWithManyPartitions(storageClient, dir, true);
+
+		Map<String, String> taskConfig = new HashMap<>();
+		taskConfig.put("gcs.bucket", BUCKET_NAME);
+		String prefix = "prefix";
+		taskConfig.put("gcs.prefix", prefix);
+		taskConfig.put("tasks.splitTopics", "true");
+		taskConfig.put("taskNum", "1");
+		taskConfig.put("taskCount", "2");
+		int partition = 1;
+		taskConfig.put("partitions", Integer.toString(partition));
+		String topics = "topic1,topic2";
+		taskConfig.put("topics", topics);
+		task.start(taskConfig);
+		int offset = 199; // see MockOffsetStorageReader
+		assertEquals(task.offsets.keySet().size(), 1);
+		for (GCSPartition gcsPartition : task.offsets.keySet()) {
+			assertEquals(BUCKET_NAME, gcsPartition.getBucket());
+			assertEquals(prefix +"/", gcsPartition.getKeyPrefix());
+			assertEquals(partition, gcsPartition.getPartition());
+			assertTrue(topics.contains(gcsPartition.getTopic()));
+			GCSOffset gcsOffset = task.offsets.get(gcsPartition);
+			assertEquals(offset, gcsOffset.getOffset());
+		}
 	}
 
 }
