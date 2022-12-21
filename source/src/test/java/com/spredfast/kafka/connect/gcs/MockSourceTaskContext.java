@@ -11,15 +11,13 @@ class MockSourceTaskContext implements SourceTaskContext {
 		return new HashMap<>();
 	}
 
-	public OffsetStorageReader offsetStorageReader() {
-		return new OffsetStorageReader() {
-			public <T> Map<String, Object> offset(Map<String, T> partition) {
-				return new HashMap<>();
-			}
+	private String bucketName;
 
-			public <T> Map<Map<String, T>, Map<String, Object>> offsets(Collection<Map<String, T>> partitions) {
-				return new HashMap<>();
-			}
-		};
+	public MockSourceTaskContext(String theBucketName) {
+		bucketName = theBucketName;
+	};
+
+	public OffsetStorageReader offsetStorageReader() {
+		return new MockOffsetStorageReader(bucketName);
 	}
 }

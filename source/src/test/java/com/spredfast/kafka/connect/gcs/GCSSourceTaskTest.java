@@ -8,10 +8,8 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTaskContext;
-import org.apache.kafka.connect.storage.OffsetStorageReader;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -20,11 +18,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,8 +32,10 @@ class GCSSourceTaskTest {
 
 	GCSFilesReader.PartitionFilter partitionFilter;
 
+	String BUCKET_NAME = "dummyGCSBucket";
+
 	void setUp(Map<String, String> taskConfig) throws Exception {
-		SourceTaskContext context = new MockSourceTaskContext();
+		SourceTaskContext context = new MockSourceTaskContext(BUCKET_NAME);
 		GCSSourceTask task = new GCSSourceTask();
 		task.initialize(context);
 		task.start(taskConfig);
@@ -44,7 +45,7 @@ class GCSSourceTaskTest {
 
 	Map<String, String> overrideConfig(Map<String, String> configOverrides) {
 		Map<String, String> taskConfig = new HashMap<>();
-		taskConfig.put("gcs.bucket", "dummyGCSBucket");
+		taskConfig.put("gcs.bucket", BUCKET_NAME);
 		taskConfig.put("partitions", "0,1,2");
 		taskConfig.put("topic", "");
 		for (String key : configOverrides.keySet()) {
@@ -137,9 +138,69 @@ class GCSSourceTaskTest {
 		checkThatOnlyThisTaskMatches(topicName,2, "1");
 		checkThatOnlyThisTaskMatches(topicName,3, "1");
 
-
-
 	}
 
+	private void write(BlockGZIPFileWriter writer, byte[] key, byte[] value, Headers headers, boolean includeKeys) throws IOException {
+		writer.write(new ByteLengthFormat(includeKeys).newWriter().writeBatch(Stream.of(
+			new ProducerRecord<>("", 0, key, value, headers)
+		)).collect(toList()), 1);
+	}
+
+	private static final BiFunction<String, String, Headers> headersFunction = (k, v) -> new RecordHeaders(new RecordHeader[]{new RecordHeader(k, v.getBytes(StandardCharsets.UTF_8))});
+
+	private void uploadToGCS(Storage storage, Path dir) throws IOException {
+		// Optional: set a generation-match precondition to avoid potential race
+		// conditions and data corruptions. The request returns a 412 error if the
+		// preconditions are not met.
+		// For a target object that does not yet exist, set the DoesNotExist precondition.
+		Storage.BlobTargetOption precondition = Storage.BlobTargetOption.doesNotExist();
+
+		Files.walk(dir).filter(Files::isRegularFile).forEach(f -> {
+			Path relative = dir.relativize(f);
+			System.out.println("Writing " + relative.toString());
+			// https://cloud.google.com/storage/docs/samples/storage-upload-file
+			BlobId blobId = BlobId.of(BUCKET_NAME, relative.toString());
+			BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+			try {
+				storage.create(blobInfo, Files.readAllBytes(f), precondition);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
+	private void givenASingleDayWithManyPartitions(Storage client, Path dir, boolean includeKeys) throws IOException {
+		new File(dir.toFile(), "prefix/2016-01-01").mkdirs();
+		try (BlockGZIPFileWriter p0 = new BlockGZIPFileWriter("topic-00000", dir.toString() + "/prefix/2016-01-01", 0, 512);
+			 BlockGZIPFileWriter p1 = new BlockGZIPFileWriter("topic-00001", dir.toString() + "/prefix/2016-01-01", 0, 512);
+		) {
+			write(p0, "key0-0".getBytes(), "value0-0".getBytes(), headersFunction.apply("header key 0-0", "header value 0-0"), includeKeys);
+			write(p1, "key1-0".getBytes(), "value1-0".getBytes(), headersFunction.apply("header key 1-0", "header value 1-0"), includeKeys);
+			write(p1, "key1-1".getBytes(), "value1-1".getBytes(), headersFunction.apply("header key 1-1", "header value 1-1"), includeKeys);
+		}
+		uploadToGCS(client, dir);
+	}
+
+	@Test
+	void testTryReadFromOffsets() throws Exception {
+		FakeGCS gcs = new FakeGCS();;
+		Storage	storageClient = gcs.startAndReturnClient(BUCKET_NAME);
+		SourceTaskContext context = new MockSourceTaskContext(BUCKET_NAME);
+		GCSSourceTask task = new GCSSourceTask();
+		task.initialize(context);
+		task.gcsClient = storageClient;
+
+		final Path dir = Files.createTempDirectory("gcsFilesReaderTest");
+		givenASingleDayWithManyPartitions(storageClient, dir, true);
+
+		Map<String, String> taskConfig = new HashMap<>();
+		taskConfig.put("gcs.bucket", BUCKET_NAME);
+		taskConfig.put("partitions", "0,1,2");
+		taskConfig.put("topics", "topic1,topic2");
+		task.start(taskConfig);
+
+		assertEquals(true, task.offsets);
+
+	}
 
 }

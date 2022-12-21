@@ -161,7 +161,6 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						}
 					} else {
 						log.debug("fetch next page");
-						// I think it's never run, as pagination automatically handled in the iterator / for loop
 						page = page.getNextPage();
 					}
 					List<Blob> chunks = new ArrayList<>();
@@ -236,7 +235,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					.orElse(null);
 
 				if (chunkDescriptor == null) {
-					log.warn("Missing chunk descriptor for requested offset {} (max:{}). Moving on to next file.",
+					log.debug("Missing chunk descriptor for requested offset {} (max:{}). Probably just end of file. Moving on to next file.",
 						offset, index.lastOffset());
 					// it's possible we were at the end of this file,
 					// so move on to the next one
