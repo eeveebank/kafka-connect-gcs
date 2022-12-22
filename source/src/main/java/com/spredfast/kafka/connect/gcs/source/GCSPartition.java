@@ -26,7 +26,13 @@ public class GCSPartition {
 		String bucket = (String) map.get("bucket");
 		String keyPrefix = (String) map.get("keyPrefix");
 		String topic = (String) map.get("topic");
-		int partition = ((Number) map.get("kafkaPartition")).intValue();
+		int partition;
+		if (map.get("kafkaPartition").getClass().getSimpleName().equals("String")) {
+			// just for testing..
+			partition = Integer.parseInt((String)map.get("kafkaPartition"));
+		} else {
+			partition = ((Number) map.get("kafkaPartition")).intValue();
+		}
 		return from(bucket, keyPrefix, topic, partition);
 	}
 

@@ -26,7 +26,7 @@ public class GCSSourceTask extends SourceTask {
 	 * @see #remapTopic(String)
 	 */
 	public static final String CONFIG_TARGET_TOPIC = "targetTopic";
-	private final AtomicBoolean stopped = new AtomicBoolean();
+	public final AtomicBoolean stopped = new AtomicBoolean(); // public for testing
 
 	private Map<String, String> taskConfig;
 	private Iterator<GCSSourceRecord> reader;
@@ -37,8 +37,9 @@ public class GCSSourceTask extends SourceTask {
 	private Converter valueConverter;
 	private long gcsPollInterval = 10_000L;
 	private long errorBackoff = 1000L;
-	private Map<GCSPartition, GCSOffset> offsets;
+	public Map<GCSPartition, GCSOffset> offsets; // public for testing
 	public GCSSourceConfig gcsSourceConfig; // public for testing
+	public Storage gcsClient;  // public for testing
 
 	@Override
 	public String version() {
@@ -52,6 +53,10 @@ public class GCSSourceTask extends SourceTask {
 
 		keyConverter = Optional.ofNullable(Configure.buildConverter(taskConfig, "key.converter", true, null));
 		valueConverter = Configure.buildConverter(taskConfig, "value.converter", false, AlreadyBytesConverter.class);
+
+		if (gcsClient == null) { // if not testing
+			gcsClient = GCS.gcsclient(taskConfig);
+		}
 
 		readFromStoredOffsets();
 	}
@@ -79,9 +84,24 @@ public class GCSSourceTask extends SourceTask {
 			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
 			.orElseGet(HashSet::new);
 
+		Set<String> topicsToIgnore = configGet("topics.ignore")
+			.map(Object::toString)
+			.map(s -> Arrays.stream(s.split(",")).collect(toSet()))
+			.orElseGet(HashSet::new);
+
+		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
+
 		List<GCSPartition> partitions = partitionNumbers
 			.stream()
-			.flatMap(p -> topics.stream().map(t -> GCSPartition.from(bucket, prefix, t, p)))
+			.flatMap(partition -> topics
+				.stream()
+				.filter(topic -> (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
+					&& (!splitTopicsAcrossTasks || checkIfHashedTopicBelongsToTask(topic+"-"+partition))
+				)
+				.map(topic ->
+					GCSPartition.from(bucket, prefix, topic, partition)
+				)
+			)
 			.collect(toList());
 
 		// need to maintain internal offset state forever. task will be committed and stopped if
@@ -105,14 +125,12 @@ public class GCSSourceTask extends SourceTask {
 			.map(Long::parseLong)
 			.orElse(1000L);
 
-		Storage client = GCS.gcsclient(taskConfig);
-
 
 		gcsSourceConfig = buildConfig(partitionNumbers);
 
-		log.debug("{} reading from GCS with offsets {}", name(), offsets);
+		log.debug("{} task {} is reading from GCS with offsets {}", name(), configGet("taskNum"), offsets);
 
-		reader = new GCSFilesReader(gcsSourceConfig, client, offsets, format::newReader).readAll();
+		reader = new GCSFilesReader(gcsSourceConfig, gcsClient, offsets, format::newReader).readAll();
 	}
 
 	private GCSSourceConfig buildConfig(Set<Integer> partitionNumbers) {
@@ -133,6 +151,7 @@ public class GCSSourceTask extends SourceTask {
 		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
 
 		GCSSourceConfig config = new GCSSourceConfig(
+			configGet("taskNum").orElse("1"),
 			bucket, prefix,
 			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
 			configGet("gcs.start.marker").orElse(null),
@@ -200,8 +219,8 @@ public class GCSSourceTask extends SourceTask {
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
 		while (!reader.hasNext() && !stopped.get()) {
-			log.debug("Blocking until new GCS files are available.");
-			// sleep and block here until new files are available
+			log.debug("task {} blocking for {} ms then will parse whole bucket again.", configGet("taskNum"), gcsPollInterval);
+			// TODO: sleep and block here until new files are available if posssible - by reusing iterator
 			Thread.sleep(gcsPollInterval);
 			readFromStoredOffsets();
 		}
@@ -227,7 +246,7 @@ public class GCSSourceTask extends SourceTask {
 			));
 		}
 
-		log.debug("{} returning {} records.", name(), results.size());
+		log.debug("{} task {} returning {} records.", name(), configGet("taskNum"), results.size());
 		return results;
 	}
 
@@ -244,12 +263,12 @@ public class GCSSourceTask extends SourceTask {
 
 	@Override
 	public void commit() throws InterruptedException {
-		log.debug("{} Commit offsets {}", name(), offsets);
+		log.debug("{} task {} Commit offsets {}", name(), configGet("taskNum"), offsets);
 	}
 
 	@Override
 	public void commitRecord(SourceRecord record) throws InterruptedException {
-		log.debug("{} Commit record w/ offset {}", name(), record.sourceOffset());
+		log.debug("{} task {} Commit record w/ offset {}", name(), configGet("taskNum"), record.sourceOffset());
 	}
 
 	private String name() {

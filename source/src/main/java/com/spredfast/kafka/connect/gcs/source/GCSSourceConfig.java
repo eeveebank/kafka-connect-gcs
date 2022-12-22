@@ -10,12 +10,23 @@ public class GCSSourceConfig {
 	public Pattern keyPattern = GCSFilesReader.DEFAULT_PATTERN;
 	public GCSFilesReader.InputFilter inputFilter = GCSFilesReader.InputFilter.GUNZIP;
 	public GCSFilesReader.PartitionFilter partitionFilter = GCSFilesReader.PartitionFilter.MATCH_ALL;
+	public String taskNum;
 
 	public GCSSourceConfig(String bucket) {
 		this.bucket = bucket;
 	}
 
-	public GCSSourceConfig(String bucket, String keyPrefix, int pageSize, String startMarker, Pattern keyPattern, GCSFilesReader.InputFilter inputFilter, GCSFilesReader.PartitionFilter partitionFilter) {
+	public GCSSourceConfig(
+		String taskNum,
+		String bucket,
+		String keyPrefix,
+		int pageSize,
+		String startMarker,
+		Pattern keyPattern,
+		GCSFilesReader.InputFilter inputFilter,
+		GCSFilesReader.PartitionFilter partitionFilter
+	) {
+		this.taskNum = taskNum;
 		this.bucket = bucket;
 		this.keyPrefix = keyPrefix;
 		this.pageSize = pageSize;

@@ -143,7 +143,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					// there is an active, multi-partition consumer on the other end.
 					// to mitigate that, have as many tasks as partitions.
 					if (page == null) {
-						log.debug("creating page from null with pageSize {}", config.pageSize);
+						log.debug("task {} creating page from null with pageSize {}", config.taskNum, config.pageSize);
 						// https://github.com/googleapis/java-storage/blob/583bf73f5d58aa5d79fbaa12b24407c558235eed/samples/snippets/src/main/java/com/example/storage/object/ListObjectsWithPrefix.java
 						if (config.startMarker == null) {
 							page = storage.list(
@@ -160,8 +160,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 							);
 						}
 					} else {
-						log.debug("fetch next page");
-						// I think it's never run, as pagination automatically handled in the iterator / for loop
+						log.debug("task {} fetch next page", config.taskNum);
 						page = page.getNextPage();
 					}
 					List<Blob> chunks = new ArrayList<>();
@@ -176,14 +175,14 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 								// if our offset for this partition is beyond this chunk, ignore it
 								// this relies on filename lexicographic order being correct
 								if (offset.getGCSkey().compareTo(blob.getName()) > 0) {
-									log.debug("Skipping {} because < current offset of {}", blob.getName(), offset);
+									log.debug("task {} Skipping {} because < current offset of {}", config.taskNum, blob.getName(), offset);
 									continue;
 								}
 							}
 							chunks.add(blob);
 						}
 					}
-					log.debug("Next Chunks: {} {}", chunks.stream().count() ,LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
+					log.debug("task {} Next Chunks: {} {}", config.taskNum, chunks.stream().count() ,LazyString.of(() -> chunks.stream().map(Blob::getName).collect(toList())));
 					nextFile = chunks.iterator();
 				}
 				if (!nextFile.hasNext()) {
@@ -198,7 +197,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					if (offset != null && offset.getGCSkey().equals(currentKey)) {
 						resumeFromOffset(offset);
 					} else {
-						log.debug("Now reading from {}", currentKey);
+						log.debug("task {} Now reading from {}", config.taskNum, currentKey);
 						GCSRecordsReader reader = makeReader.get();
 						InputStream content = getContent(storage.get(config.bucket, currentKey));
 						iterator = parseKey(currentKey, (topic, partition, startOffset) -> {
@@ -228,7 +227,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 			 * so we need to load the marker and find the offset to start from.
 			 */
 			private void resumeFromOffset(GCSOffset offset) throws IOException {
-				log.debug("resumeFromOffset {}", offset);
+				log.debug("task {} resumeFromOffset {}", config.taskNum, offset);
 				GCSRecordsReader reader = makeReader.get();
 
 				ChunksIndex index = getChunksIndex(offset.getGCSkey());
@@ -236,8 +235,12 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 					.orElse(null);
 
 				if (chunkDescriptor == null) {
-					log.warn("Missing chunk descriptor for requested offset {} (max:{}). Moving on to next file.",
-						offset, index.lastOffset());
+					log.debug(
+						"task {} Missing chunk descriptor for requested offset {} (max:{}). Probably just end of file. Moving on to next file.",
+						config.taskNum,
+						offset,
+						index.lastOffset()
+					);
 					// it's possible we were at the end of this file,
 					// so move on to the next one
 					nextObject();
@@ -307,7 +310,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 				);
 
 
-				log.debug("Resume {}: Now reading from {}, reading {}-{}", offset, currentKey, chunkDescriptor.byte_offset, index.totalSize());
+				log.debug("task {} Resume {}: Now reading from {}, reading {}-{}", config.taskNum, offset, currentKey, chunkDescriptor.byte_offset, index.totalSize());
 
 				// skip records before the given offset
 				long recordSkipCount = offset.getOffset() - chunkDescriptor.first_record_offset + 1;

@@ -72,8 +72,31 @@ class GCSSourceConnectorTest {
 		assertEquals(200/taskCount +1, partitions.length);
 		assertEquals("1", Arrays.stream(partitions).findFirst().get());
 		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("6")));
-		assertEquals(false, Arrays.stream(partitions).anyMatch(n -> n.equals("0")));
+		assertEquals(false, Arrays.stream(partitions).anyMatch(n -> n.equals("2")));
+	}
 
+	@Test
+	void testConfigSplitTopicsAcrossTasks() {
+		Map<String, String> configOverrides = new HashMap<>();
+		configOverrides.put("tasks.splitTopics", "true");
+		withConfig(configOverrides);
+		int taskCount = 5;
+		List<Map<String, String>>  taskConfigs = connector.taskConfigs(5);
+		assertEquals(5, taskConfigs.size());
+
+		Map<String, String> taskConfig = taskConfigs.get(0);
+		String[] partitions = taskConfig.get("partitions").split(",");
+		assertEquals(200 +1, partitions.length);
+		assertEquals("0", Arrays.stream(partitions).findFirst().get());
+		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("5")));
+		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("1")));
+
+		taskConfig = taskConfigs.get(1);
+		partitions = taskConfig.get("partitions").split(",");
+		assertEquals(200 +1, partitions.length);
+		assertEquals("1", Arrays.stream(partitions).findFirst().get());
+		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("6")));
+		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("2")));
 	}
 
 	@Test
