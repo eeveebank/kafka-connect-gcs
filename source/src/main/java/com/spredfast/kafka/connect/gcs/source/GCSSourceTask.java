@@ -151,7 +151,7 @@ public class GCSSourceTask extends SourceTask {
 		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
 
 		GCSSourceConfig config = new GCSSourceConfig(
-			configGet("taskNum"),
+			configGet("taskNum").get(),
 			bucket, prefix,
 			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
 			configGet("gcs.start.marker").orElse(null),

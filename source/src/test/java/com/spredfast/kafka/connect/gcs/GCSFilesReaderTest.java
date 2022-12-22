@@ -133,7 +133,7 @@ class GCSFilesReaderTest {
 		);
 		return new GCSFilesReader(
 			new GCSSourceConfig(
-				1,
+				"1",
 				bucketName,
 				"prefix",
 				1,
@@ -184,7 +184,7 @@ class GCSFilesReaderTest {
 	private List<String> whenTheRecordsAreRead(Storage storage, boolean fileIncludesKeys, int pageSize) {
 		GCSFilesReader reader = new GCSFilesReader(
 			new GCSSourceConfig(
-				1, bucketName, "prefix", pageSize, "prefix/2016-01-01", GCSFilesReader.DEFAULT_PATTERN, GCSFilesReader.InputFilter.GUNZIP, null
+				"1", bucketName, "prefix", pageSize, "prefix/2016-01-01", GCSFilesReader.DEFAULT_PATTERN, GCSFilesReader.InputFilter.GUNZIP, null
 			),
 			storage,
 			null,

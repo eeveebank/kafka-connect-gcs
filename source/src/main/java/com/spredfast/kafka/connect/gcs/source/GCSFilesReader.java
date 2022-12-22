@@ -206,7 +206,7 @@ public class GCSFilesReader implements Iterable<GCSSourceRecord> {
 						});
 					}
 				} catch (IOException e) {
-					throw new ConnectException("task {} Error in kafka-connect-gcs iterator", config.taskNum, e);
+					throw new ConnectException("Error in kafka-connect-gcs iterator", e);
 				}
 			}
 
