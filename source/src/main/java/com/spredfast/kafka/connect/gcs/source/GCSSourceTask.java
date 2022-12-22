@@ -151,6 +151,7 @@ public class GCSSourceTask extends SourceTask {
 		Boolean splitTopicsAcrossTasks = Boolean.parseBoolean(configGet("tasks.splitTopics").orElse("false"));
 
 		GCSSourceConfig config = new GCSSourceConfig(
+			configGet("taskNum"),
 			bucket, prefix,
 			configGet("gcs.page.size").map(Integer::parseInt).orElse(100),
 			configGet("gcs.start.marker").orElse(null),
@@ -218,7 +219,7 @@ public class GCSSourceTask extends SourceTask {
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
 		while (!reader.hasNext() && !stopped.get()) {
-			log.debug("Blocking for {} ms then will parse whole bucket again.", gcsPollInterval);
+			log.debug("task {} blocking for {} ms then will parse whole bucket again.", configGet("taskNum"), gcsPollInterval);
 			// TODO: sleep and block here until new files are available if posssible - by reusing iterator
 			Thread.sleep(gcsPollInterval);
 			readFromStoredOffsets();
@@ -245,7 +246,7 @@ public class GCSSourceTask extends SourceTask {
 			));
 		}
 
-		log.debug("{} returning {} records.", name(), results.size());
+		log.debug("{} task {} returning {} records.", name(), configGet("taskNum"), results.size());
 		return results;
 	}
 
@@ -262,12 +263,12 @@ public class GCSSourceTask extends SourceTask {
 
 	@Override
 	public void commit() throws InterruptedException {
-		log.debug("{} Commit offsets {}", name(), offsets);
+		log.debug("{} task {} Commit offsets {}", name(), configGet("taskNum"), offsets);
 	}
 
 	@Override
 	public void commitRecord(SourceRecord record) throws InterruptedException {
-		log.debug("{} Commit record w/ offset {}", name(), record.sourceOffset());
+		log.debug("{} task {} Commit record w/ offset {}", name(), configGet("taskNum"), record.sourceOffset());
 	}
 
 	private String name() {
