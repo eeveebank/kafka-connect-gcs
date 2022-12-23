@@ -48,7 +48,7 @@ public class GCSSourceConnector extends SourceConnector {
 
 		return IntStream.range(0, taskCount).mapToObj(taskNum ->
 			// each task gets every nth partition
-			IntStream.iterate(taskNum, i -> i + iter)
+			IntStream.iterate(splitTopicsAcrossTasks ? 0 : taskNum, i -> i + iter)
 			.mapToObj(Integer::toString)
 			.limit(partitions / iter + 1).collect(joining(",")))
 			.map(parts -> {

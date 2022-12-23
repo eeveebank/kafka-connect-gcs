@@ -94,7 +94,7 @@ class GCSSourceConnectorTest {
 		taskConfig = taskConfigs.get(1);
 		partitions = taskConfig.get("partitions").split(",");
 		assertEquals(200 +1, partitions.length);
-		assertEquals("1", Arrays.stream(partitions).findFirst().get());
+		assertEquals("0", Arrays.stream(partitions).findFirst().get());
 		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("6")));
 		assertEquals(true, Arrays.stream(partitions).anyMatch(n -> n.equals("2")));
 	}
