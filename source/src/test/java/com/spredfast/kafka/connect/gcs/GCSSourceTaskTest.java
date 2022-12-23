@@ -49,6 +49,7 @@ class GCSSourceTaskTest {
 		taskConfig.put("gcs.bucket", BUCKET_NAME);
 		taskConfig.put("partitions", "0,1,2");
 		taskConfig.put("topic", "");
+		taskConfig.put("taskNum", "1");
 		for (String key : configOverrides.keySet()) {
 			taskConfig.put(key, configOverrides.get(key));
 		}
@@ -202,6 +203,7 @@ class GCSSourceTaskTest {
 		taskConfig.put("partitions", Integer.toString(partition));
 		String topics = "topic1,topic2";
 		taskConfig.put("topics", topics);
+		taskConfig.put("taskNum", "1");
 		task.start(taskConfig);
 		int offset = 199; // see MockOffsetStorageReader
 		assertEquals(task.offsets.keySet().size(), 2);
