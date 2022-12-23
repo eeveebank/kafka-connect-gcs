@@ -221,7 +221,7 @@ public class GCSSourceTask extends SourceTask {
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
 		while (!reader.hasNext() && !stopped.get()) {
-			log.debug("task {} blocking for {} ms then will parse whole bucket again.", configGet("taskNum").get(), gcsPollInterval);
+			log.info("task {} blocking for {} ms then will parse whole bucket again.", configGet("taskNum").get(), gcsPollInterval);
 			// TODO: sleep and block here until new files are available if posssible - by reusing iterator
 			Thread.sleep(gcsPollInterval);
 			readFromStoredOffsets();
