@@ -14,6 +14,7 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -107,6 +108,8 @@ public class GCSSourceTask extends SourceTask {
 		// need to maintain internal offset state forever. task will be committed and stopped if
 		// our partitions change, so internal state should always be the most accurate
 		if (offsets == null) {
+//			Runtime runtime = Runtime.getRuntime();
+//			long memory = runtime.totalMemory()- runtime.freeMemory();
 			offsets = context.offsetStorageReader()
 				.offsets(partitions.stream().map(GCSPartition::asMap).collect(toList()))
 				.entrySet().stream().filter(e -> e.getValue() != null)
@@ -114,7 +117,10 @@ public class GCSSourceTask extends SourceTask {
 					entry -> GCSPartition.from(entry.getKey()),
 					entry -> GCSOffset.from(entry.getValue())
 				));
-			log.debug("{} task initial offsets debug is {}", configGet("taskNum").get(), offsets);
+//			long memory1 = runtime.totalMemory()- runtime.freeMemory();
+//			System.out.println(memory1- memory);
+			log.info("{} task initial offsets length debug is {}", configGet("taskNum").get(), offsets.size());
+			//log.debug("{} task offsets size in bytes debug is {}", configGet("taskNum").get(), MapSizeFetcher.size(offsets));
 		}
 
 		maxPoll = configGet("max.poll.records")
@@ -177,7 +183,7 @@ public class GCSSourceTask extends SourceTask {
 		int taskNum = Integer.parseInt(configGet("taskNum").get());
 		int taskCount = Integer.parseInt(configGet("taskCount").get());
 		int hashCode = hash(topicName);
-		log.debug("hashCode for {} is {}", topicName, hashCode);
+		log.debug("hashCode for {} is {} with modulo {} and taskNum {}", topicName, hashCode, hashCode % taskCount, taskNum);
 		return hashCode % taskCount == taskNum;
 	}
 
