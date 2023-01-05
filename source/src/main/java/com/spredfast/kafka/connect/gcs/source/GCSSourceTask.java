@@ -36,7 +36,8 @@ public class GCSSourceTask extends SourceTask {
 	private GCSRecordFormat format;
 	private Optional<Converter> keyConverter;
 	private Converter valueConverter;
-	private long gcsPollInterval = 10_000L;
+	private long gcsPollInterval = 30_000L; // in ms : 30 s
+	private long gcsPollTimeout = 36_000_0000L; // in ms : 10 h
 	private long errorBackoff = 1000L;
 	public Map<GCSPartition, GCSOffset> offsets; // public for testing
 	public GCSSourceConfig gcsSourceConfig; // public for testing
@@ -128,7 +129,10 @@ public class GCSSourceTask extends SourceTask {
 			.orElse(1000);
 		gcsPollInterval = configGet("gcs.new.record.poll.interval")
 			.map(Long::parseLong)
-			.orElse(10_000L);
+			.orElse(30_000L);
+		gcsPollTimeout = configGet("gcs.new.record.poll.timeout")
+			.map(Long::parseLong)
+			.orElse(36_000_000L);
 		errorBackoff = configGet("gcs.error.backoff")
 			.map(Long::parseLong)
 			.orElse(1000L);
@@ -226,11 +230,25 @@ public class GCSSourceTask extends SourceTask {
 	}
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
-		while (!reader.hasNext() && !stopped.get()) {
-			log.info("task {} blocking for {} ms then will parse whole bucket again.", configGet("taskNum").get(), gcsPollInterval);
+		long startTime = System.currentTimeMillis();
+		long elapsedTime = 0L;
+		boolean sleep = !reader.hasNext() && !stopped.get();
+		while (sleep) {
+			log.info("task {} blocking for {} ms", configGet("taskNum").get(), gcsPollInterval);
 			// TODO: sleep and block here until new files are available if posssible - by reusing iterator
 			Thread.sleep(gcsPollInterval);
-			readFromStoredOffsets();
+			elapsedTime = (new Date()).getTime() - startTime;
+			if (elapsedTime > gcsPollTimeout) {
+				log.info("task {} restarting from whole list of objects", configGet("taskNum").get(), gcsPollTimeout);
+				readFromStoredOffsets();
+			} else if (!(!reader.hasNext() && !stopped.get())) {
+				log.info(
+					"listing new objects that have been added after the object listing started: pageToken has been refreshed",
+					configGet("taskNum").get(),
+					gcsPollTimeout
+				);
+			}
+			sleep = !reader.hasNext() && !stopped.get();
 		}
 
 		if (stopped.get()) {
