@@ -32,7 +32,7 @@ import static org.apache.kafka.clients.consumer.ConsumerRecord.NULL_SIZE;
  * Helper for reading raw length encoded records from a chunk file. Not thread safe.
  */
 public class BytesRecordReader implements RecordReader {
-	private static final Logger log = LoggerFactory.getLogger(GCSFilesReader.class);
+	private static final Logger log = LoggerFactory.getLogger(BytesRecordReader.class);
 	private static final Gson GSON = new Gson();
 	private final ByteBuffer lenBuffer = ByteBuffer.allocate(LENGTH_FIELD_SIZE);
 
