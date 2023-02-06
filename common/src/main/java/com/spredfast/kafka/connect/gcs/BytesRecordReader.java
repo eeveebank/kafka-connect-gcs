@@ -9,6 +9,8 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.errors.DataException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import static org.apache.kafka.clients.consumer.ConsumerRecord.NULL_SIZE;
  * Helper for reading raw length encoded records from a chunk file. Not thread safe.
  */
 public class BytesRecordReader implements RecordReader {
+	private static final Logger log = LoggerFactory.getLogger(BytesRecordReader.class);
 	private static final Gson GSON = new Gson();
 	private final ByteBuffer lenBuffer = ByteBuffer.allocate(LENGTH_FIELD_SIZE);
 
@@ -62,7 +65,7 @@ public class BytesRecordReader implements RecordReader {
 	 * @return a raw ConsumerRecord or null if at the end of the data stream.
 	 */
 	@Override
-	public ConsumerRecord<byte[], byte[]> read(String topic, int partition, long offset, BufferedInputStream data) throws IOException {
+		public ConsumerRecord<byte[], byte[]> read(String topic, int partition, long offset, BufferedInputStream data) throws IOException {
 		ReadContext context = new ReadContext(topic, partition, offset, data);
 		return read(context);
 	}
@@ -148,6 +151,8 @@ public class BytesRecordReader implements RecordReader {
 			}
 			read += readNow;
 		}
+		String bytesAsString = Arrays.toString(bytes);
+		log.debug("debug readBytes bytesAsString {}", bytesAsString);
 		return bytes;
 	}
 
@@ -157,6 +162,8 @@ public class BytesRecordReader implements RecordReader {
 		if (read == -1) {
 			return null;
 		} else if (read != 4) {
+			String bytesAsString = Arrays.toString(lenBuffer.array());
+			log.info("info readLen bytesAsString {}", bytesAsString);
 			die(context);
 		}
 		return lenBuffer.getInt();
@@ -177,5 +184,7 @@ public class BytesRecordReader implements RecordReader {
 	protected ConsumerRecord<byte[], byte[]> die(ReadContext context) {
 		throw new DataException(String.format("Corrupt record at %s-%d:%d", context.topic, context.partition, context.offset));
 	}
+
+
 
 }

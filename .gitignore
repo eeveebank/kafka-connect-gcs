@@ -5,3 +5,4 @@ local-*
 .gradle
 out
 .DS_Store
+.vscode

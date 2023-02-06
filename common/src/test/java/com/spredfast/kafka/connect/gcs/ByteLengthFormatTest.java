@@ -51,8 +51,17 @@ public class ByteLengthFormatTest {
 					new RecordHeader("h3", "foo".getBytes(StandardCharsets.UTF_8)),
 					new RecordHeader("h4", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)),
 				})),
-				new FormatTests.Record("k3", "238473210984712309\n84710923847231098472390847324098543298652938475\n49837", new RecordHeaders(new RecordHeader[]{
+				new FormatTests.Record("k3", "\u0006GET\u0002H396a14e5-5f45-455a-b840-afdca1625748\u0014/auth/user\u0000", new RecordHeaders(new RecordHeader[]{
 					new RecordHeader("h1", "foo".getBytes(StandardCharsets.UTF_8)),
+				})),
+				new FormatTests.Record("089dc5b2-b8a7-4b0a-be66-f20cfe79cc5b", "238473210984712309\n84710923847231098472390847324098543298652938475\n49837", new RecordHeaders(new RecordHeader[]{
+					new RecordHeader("produce.timestamp.epoch_ms.string", "1672420145594".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("spring_json_header_types", "{\"produce.timestamp.epoch_ms.string\":\"java.lang.String\",\"createdTimestamp\":\"java.lang.Long\",\"contentType\":\"java.lang.String\",\"stateStoreId\":\"java.lang.String\"}".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("uber-trace-id", "9e9f00c502f8c71b2c0dfe6bfe1063b7:f8a6085bfe88f882:0:1".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("createdTimestamp", "1672420145594".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("traceparent", "00-9e9f00c502f8c71b2c0dfe6bfe1063b7-f8a6085bfe88f882-01".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("contentType", "application/vnd.opsuseraction.v2+avro".getBytes(StandardCharsets.UTF_8)),
+					new RecordHeader("stateStoreId", "e7efc4f3-c250-485d-b6ea-61d307320000".getBytes(StandardCharsets.UTF_8)),
 				}))
 			),
 			0);

@@ -1,6 +1,5 @@
 package com.spredfast.kafka.connect.gcs;
 
-import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
 import org.apache.kafka.common.Configurable;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.storage.Converter;
