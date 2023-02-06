@@ -1,9 +1,6 @@
 package com.spredfast.kafka.connect.gcs;
 
 import com.google.gson.Gson;
-import com.spredfast.kafka.connect.gcs.GCSRecordFormat;
-import com.spredfast.kafka.connect.gcs.GCSRecordsReader;
-import com.spredfast.kafka.connect.gcs.GCSRecordsWriter;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.Configurable;
 import org.apache.kafka.common.header.Headers;
