@@ -158,22 +158,27 @@ public class BytesRecordReader implements RecordReader {
 
 	private Integer readLen(ReadContext context) throws IOException {
 		lenBuffer.rewind();
-		int read = context.data.read(lenBuffer.array(), 0, 4);
-		if (read == -1) {
-			return null;
-		} else if (read != 4) {
-			String bytesAsString = Arrays.toString(lenBuffer.array());
-			log.info(
-				"info readLen bytesAsString {} {} {} {} {} {}",
-				bytesAsString,
-				read,
-				lenBuffer.mark(),
-				lenBuffer.position(),
-				lenBuffer.limit(),
-				lenBuffer.capacity()
-			);
-			die(context);
+		int read = 0;
+		int len = 4;
+		while (read < len) {
+			int readNow = context.data.read(lenBuffer.array(), read, len - read);
+			if (readNow == -1) {
+				return null;
+			}
+			read += readNow;
 		}
+//		else if (read != 4) {
+//			String bytesAsString = Arrays.toString(lenBuffer.array());
+//			log.info(
+//				"info readLen bytesAsString {} {} {} {} {} {}",
+//				bytesAsString,
+//				read,
+//				lenBuffer.mark(),
+//				lenBuffer.position(),
+//				lenBuffer.limit(),
+//				lenBuffer.capacity()
+//			);
+//			die(context);
 		return lenBuffer.getInt();
 	}
 
