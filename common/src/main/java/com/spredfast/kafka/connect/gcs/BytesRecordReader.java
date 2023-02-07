@@ -163,7 +163,7 @@ public class BytesRecordReader implements RecordReader {
 			return null;
 		} else if (read != 4) {
 			String bytesAsString = Arrays.toString(lenBuffer.array());
-			log.info("info readLen bytesAsString {}", bytesAsString);
+			log.info("info readLen bytesAsString {} {}", bytesAsString, read);
 			die(context);
 		}
 		return lenBuffer.getInt();

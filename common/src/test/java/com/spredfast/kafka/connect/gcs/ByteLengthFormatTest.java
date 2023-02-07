@@ -8,15 +8,49 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.junit.Test;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static com.spredfast.kafka.connect.gcs.Constants.LENGTH_FIELD_SIZE;
 import static com.spredfast.kafka.connect.gcs.FormatTests.assertBytesAreEqual;
+import static org.junit.Assert.assertEquals;
 
 public class ByteLengthFormatTest {
+
+	//	INFO 2023-02-07T09:35:51.342823112Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 88, -27]
+	//	INFO 2023-02-07T09:35:51.775160951Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 4, 44]
+	//	INFO 2023-02-07T09:35:54.339323233Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 96, -99]
+	//	INFO 2023-02-07T09:35:55.029105658Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:35:55.998989667Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 5, 126]
+	//	INFO 2023-02-07T09:35:56.537830729Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 5, -14]
+	//	INFO 2023-02-07T09:35:56.611707473Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 5, 95]
+	//	INFO 2023-02-07T09:35:58.113574669Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:35:59.700810289Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 5, -5]
+	//	INFO 2023-02-07T09:35:59.819363771Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:35:59.892236309Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:36:00.476222119Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:36:00.935755001Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 107]
+	//	INFO 2023-02-07T09:37:40.979941685Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 96, -99]
+	//	INFO 2023-02-07T09:37:44.682687725Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:37:44.922900745Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:37:44.948250846Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 0, 36]
+	//	INFO 2023-02-07T09:37:45.102478943Z [resource.labels.containerName: kafka-connect-gcs-restore-v47] info readLen bytesAsString [0, 0, 5, 95]
+
+	@Test
+	public void tempDebugBytes() throws IOException {
+		BufferedInputStream data;
+		InputStream input = new ByteArrayInputStream(new byte[] { 0, 0, 0, 36 });
+		ByteBuffer lenBuffer = ByteBuffer.allocate(LENGTH_FIELD_SIZE);
+		lenBuffer.rewind();
+		int code = input.read(lenBuffer.array(), 0, 4);
+		assertEquals(code, 4);
+	}
 
 	@Test
 	public void defaults() throws IOException {
