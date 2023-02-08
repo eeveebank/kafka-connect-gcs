@@ -180,8 +180,7 @@ These additional configs apply to the Source connector:
 | targetTopic.${original} | none | If you want the source to send records to an different topic than the original. e.g., targetTopic.foo=bar would send messages originally in topic foo to topic bar. |
 | gcs.page.size | 100 | The number of objects we list from GCS in one request |
 | gcs.start.marker | `null` | [List-Object Marker](http://docs.aws.amazon.com/cli/latest/reference/s3api/list-objects.html#output). GCS object key or key prefix to start reading from. |
-| gcs.new.record.poll.interval | 30000 (30 s) | How long to wait to check for new page in the current object list request (in ms) |
-| gcs.new.record.poll.timeout | 36000000 (10 h) | If no new pages have been added to the current list request during this time, then we'll restart a whole new list request parsing all the bucket objects since the start |
+| gcs.new.record.poll.interval | 30000 (30 s) | How long to wait before restarting a whole new list request parsing all the bucket objects since the start |
 | gcs.error.backoff | 1000 | How long to wait to try again retryable errors (in ms) |
 | tasks | 1 | If greater than 1, then for each topic, partition `n` will go to task `n` (modulo) - that means there is not much point having more than 4 tasks given that our topics in general have up to 3 partitions - to have more tasks use `tasks.splitTopic = "true"`
 | tasks.splitTopics | "false" | If set to "true", then the topics will be split across tasks  based on a hash of {topicName}-{partition}. This allows setting tasks to a high number.
