@@ -37,7 +37,6 @@ public class GCSSourceTask extends SourceTask {
 	private Optional<Converter> keyConverter;
 	private Converter valueConverter;
 	private long gcsPollInterval = 30_000L; // in ms : 30 s
-	private long gcsPollTimeout = 36_000_0000L; // in ms : 10 h
 	private long errorBackoff = 1000L;
 	public Map<GCSPartition, GCSOffset> offsets; // public for testing
 	public GCSSourceConfig gcsSourceConfig; // public for testing
@@ -95,13 +94,13 @@ public class GCSSourceTask extends SourceTask {
 
 		List<GCSPartition> partitions = partitionNumbers
 			.stream()
-			.flatMap(partition -> topics
+			.flatMap(partitionNb -> topics
 				.stream()
 				.filter(topic -> (topicsToIgnore.isEmpty() || !topicsToIgnore.contains(topic))
-					&& (!splitTopicsAcrossTasks || checkIfHashedTopicBelongsToTask(topic+"-"+partition))
+					&& (!splitTopicsAcrossTasks || checkIfHashedTopicBelongsToTask(topic+"-"+partitionNb))
 				)
 				.map(topic ->
-					GCSPartition.from(bucket, prefix, topic, partition)
+					GCSPartition.from(bucket, prefix, topic, partitionNb)
 				)
 			)
 			.collect(toList());
@@ -130,9 +129,6 @@ public class GCSSourceTask extends SourceTask {
 		gcsPollInterval = configGet("gcs.new.record.poll.interval")
 			.map(Long::parseLong)
 			.orElse(30_000L);
-		gcsPollTimeout = configGet("gcs.new.record.poll.timeout")
-			.map(Long::parseLong)
-			.orElse(36_000_000L);
 		errorBackoff = configGet("gcs.error.backoff")
 			.map(Long::parseLong)
 			.orElse(1000L);
@@ -183,10 +179,9 @@ public class GCSSourceTask extends SourceTask {
 	}
 
 	private Boolean checkIfHashedTopicBelongsToTask(String topicName) {
-		byte[] bytesOfMessage = new byte[0];
 		int taskNum = Integer.parseInt(configGet("taskNum").get());
 		int taskCount = Integer.parseInt(configGet("taskCount").get());
-		int hashCode = hash(topicName);
+		int hashCode = Math.abs(hash(topicName));
 		log.debug("hashCode for {} is {} with modulo {} and taskNum {}", topicName, hashCode, hashCode % taskCount, taskNum);
 		return hashCode % taskCount == taskNum;
 	}
@@ -230,25 +225,12 @@ public class GCSSourceTask extends SourceTask {
 	}
 
 	private List<SourceRecord> getSourceRecords(List<SourceRecord> results) throws InterruptedException {
-		long startTime = System.currentTimeMillis();
-		long elapsedTime = 0L;
-		boolean sleep = !reader.hasNext() && !stopped.get();
-		while (sleep) {
+		while (!reader.hasNext() && !stopped.get()) {
 			log.info("task {} blocking for {} ms", configGet("taskNum").get(), gcsPollInterval);
 			// TODO: sleep and block here until new files are available if posssible - by reusing iterator
 			Thread.sleep(gcsPollInterval);
-			elapsedTime = (new Date()).getTime() - startTime;
-			if (elapsedTime > gcsPollTimeout) {
-				log.info("task {} restarting from whole list of objects", configGet("taskNum").get(), gcsPollTimeout);
-				readFromStoredOffsets();
-			} else if (!(!reader.hasNext() && !stopped.get())) {
-				log.info(
-					"listing new objects that have been added after the object listing started: pageToken has been refreshed",
-					configGet("taskNum").get(),
-					gcsPollTimeout
-				);
-			}
-			sleep = !reader.hasNext() && !stopped.get();
+			log.info("task {} restarting from whole list of objects", configGet("taskNum").get());
+			readFromStoredOffsets();
 		}
 
 		if (stopped.get()) {

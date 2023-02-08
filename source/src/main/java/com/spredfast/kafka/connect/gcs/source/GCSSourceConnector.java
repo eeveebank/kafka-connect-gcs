@@ -37,7 +37,7 @@ public class GCSSourceConnector extends SourceConnector {
 
 	@Override
 	public List<Map<String, String>> taskConfigs(int taskCount) {
-		int partitions = Optional.ofNullable(config.get(MAX_PARTITION_COUNT))
+		int maxNbOfPartitions = Optional.ofNullable(config.get(MAX_PARTITION_COUNT))
 			.map(Integer::parseInt).orElse(DEFAULT_PARTITION_COUNT);
 
 		int[] idx = new int[] { 0 };
@@ -50,7 +50,7 @@ public class GCSSourceConnector extends SourceConnector {
 			// each task gets every nth partition
 			IntStream.iterate(splitTopicsAcrossTasks ? 0 : taskNum, i -> i + iter)
 			.mapToObj(Integer::toString)
-			.limit(partitions / iter + 1).collect(joining(",")))
+			.limit(maxNbOfPartitions / iter + 1).collect(joining(",")))
 			.map(parts -> {
 				Map<String, String> task = new HashMap<>(config);
 				task.put("partitions", parts);
