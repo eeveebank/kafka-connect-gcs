@@ -1,3 +1,5 @@
+Repo's owner has been changed: see https://github.com/Leooo/kafka-connect-gcs
+
 # Kafka Connect GCS
 
 [![CircleCI](https://circleci.com/gh/spredfast/kafka-connect-gcs.svg?style=shield)](https://circleci.com/gh/spredfast/kafka-connect-gcs)
